@@ -51,6 +51,12 @@ uv venv
 source .venv/bin/activate
 ```
 
+또는 가상환경을 활성화하지 않고도 아래와 같이 uv run, uv pip 명령어를 사용하여 실행 및 패키지 관리를 할 수 있습니다:
+```bash
+uv run python manage.py runserver
+uv pip list
+```
+
 ### 5. 의존성 설치
 
 ```bash
