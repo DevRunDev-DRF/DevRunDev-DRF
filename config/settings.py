@@ -10,6 +10,10 @@ env = environ.Env(DEBUG=(bool, False))
 # .env 파일 읽기
 environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
+# .env 파일 누락 시 경고 표시 (선택 사항)
+if not os.path.exists(os.path.join(BASE_DIR, ".env")):
+    print("⚠️  .env 파일이 존재하지 않습니다. 환경변수를 불러올 수 없습니다.")
+
 # 환경변수로부터 값 가져오기
 SECRET_KEY = env("SECRET_KEY")
 DEBUG = env("DEBUG")
@@ -18,22 +22,29 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
 # 데이터베이스 설정
 DATABASES = {"default": env.db()}
 
-# Application definition
-
-INSTALLED_APPS = [
+DJANGO_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+]
+
+THIRD_PARTY_APPS = [
     "rest_framework",
+]
+
+LOCAL_APPS = [
     "accounts",
     "courses",
     "enrollments",
     "quizzes",
     "reviews",
 ]
+
+INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
