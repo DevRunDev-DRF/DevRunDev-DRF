@@ -3,6 +3,7 @@ from rest_framework import filters, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
 
 from .models import Course, Section, Lesson
 from .permissions import IsInstructorOrReadOnly, IsOwnerInstructorOrReadOnly
@@ -109,7 +110,7 @@ class SectionViewSet(viewsets.ModelViewSet):
 
         # 강의의 작성자만 섹션 추가 가능
         if course.instructor != self.request.user:
-            raise PermissionError(
+            raise PermissionDenied(
                 "You don't have permission to add sections to this course."
             )
 
@@ -141,7 +142,7 @@ class LessonViewSet(viewsets.ModelViewSet):
 
         # 섹션이 속한 강의의 작성자만 레슨 추가 가능
         if section.course.instructor != self.request.user:
-            raise PermissionError(
+            raise PermissionDenied(
                 "You don't have permission to add lessons to this section."
             )
 
