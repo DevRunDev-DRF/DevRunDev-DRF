@@ -12,4 +12,5 @@ dependencies = [
     "drf-yasg>=1.21.10",
     "Pillow>=11.1.0",
     "django-filter>=25.1",
+    "django-debug-toolbar>=5.1.0",
 ]
