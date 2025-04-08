@@ -22,6 +22,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls")),
     path("courses/", include("courses.urls")),
+    path("quizzes/", include("quizzes.urls")),
     # Swagger 문서 URL
     path(
         "swagger<format>/", schema_view.without_ui(cache_timeout=0), name="schema-json"
