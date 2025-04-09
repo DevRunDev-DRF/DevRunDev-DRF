@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+
+{% block title %}강사 대시보드 - DevRunDev{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">강사 대시보드</h1>
+    
+    <!-- 통계 카드 -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-lg font-bold text-gray-700 mb-2">내 강의</h2>
+            <p class="text-3xl font-bold text-blue-600">{{ courses_count }}</p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-lg font-bold text-gray-700 mb-2">총 학생 수</h2>
+            <p class="text-3xl font-bold text-blue-600">{{ total_students }}</p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-lg font-bold text-gray-700 mb-2">평균 평점</h2>
+            <p class="text-3xl font-bold text-blue-600">{{ avg_rating|floatformat:1 }}</p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-lg font-bold text-gray-700 mb-2">총 리뷰 수</h2>
+            <p class="text-3xl font-bold text-blue-600">{{ total_reviews }}</p>
+        </div>
+    </div>
+    
+    <!-- 내 강의 목록 탭 -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold">내 강의 관리</h2>
+            
+            <a href="{% url 'courses:course-create' %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors">
+                새 강의 만들기
+            </a>
+        </div>
+        
+        <!-- 탭 메뉴 -->
+        <div class="border-b border-gray-200 mb-6">
+            <div class="flex space-x-6">
+                <a href="?status=all" 
+                   class="py-2 border-b-2 {% if not request.GET.status or request.GET.status == 'all' %}border-blue-600 text-blue-600{% else %}border-transparent{% endif %}">
+                    전체 ({{ courses_count }})
+                </a>
+                <a href="?status=approved" 
+                   class="py-2 border-b-2 {% if request.GET.status == 'approved' %}border-blue-600 text-blue-600{% else %}border-transparent{% endif %}">
+                    승인됨 ({{ approved_count }})
+                </a>
+                <a href="?status=review" 
+                   class="py-2 border-b-2 {% if request.GET.status == 'review' %}border-blue-600 text-blue-600{% else %}border-transparent{% endif %}">
+                    심사 중 ({{ review_count }})
+                </a>
+                <a href="?status=not_approved" 
+                   class="py-2 border-b-2 {% if request.GET.status == 'not_approved' %}border-blue-600 text-blue-600{% else %}border-transparent{% endif %}">
+                    수정 필요 ({{ not_approved_count }})
+                </a>
+            </div>
+        </div>
+        
+        <!-- 강의 목록 테이블 -->
+        {% if courses %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                강의명
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                상태
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                수강생
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                평점
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                생성일
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                관리
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for course in courses %}
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <img class="h-10 w-10 rounded-full object-cover" 
+                                                 src="{{ course.thumbnail.url|default:'/static/images/default.jpg' }}" 
+                                                 alt="{{ course.title }}">
+                                        </div>
+                                        <div class="ml-4">
+                                            <a href="{% url 'courses:course-detail' course.id %}" class="text-blue-600 hover:underline">
+                                                {{ course.title }}
+                                            </a>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                                 {% if course.status == 'approved' %}bg-green-100 text-green-800
+                                                 {% elif course.status == 'review' %}bg-yellow-100 text-yellow-800
+                                                 {% else %}bg-red-100 text-red-800{% endif %}">
+                                        {{ course.get_status_display }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {{ course.enrollments.count }}명
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <div class="flex items-center">
+                                        <div class="flex mr-1">
+                                            {% for i in "12345" %}
+                                                {% if forloop.counter <= course.avg_rating|floatformat:"0" %}
+                                                    <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                    </svg>
+                                                {% else %}
+                                                    <svg class="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                    </svg>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        <span>{{ course.avg_rating|floatformat:1 }} ({{ course.reviews.count }})</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {{ course.created_at|date:"Y년 m월 d일" }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                    <a href="{% url 'courses:course-edit' course.id %}" class="text-blue-600 hover:underline mr-3">
+                                        수정
+                                    </a>
+                                    <a href="{% url 'courses:course-detail' course.id %}" class="text-gray-600 hover:underline">
+                                        보기
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 페이지네이션 -->
+            {% if is_paginated %}
+            <div class="mt-6 flex justify-center">
+                <div class="flex space-x-1">
+                    {% if page_obj.has_previous %}
+                        <a href="?{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}page=1" 
+                           class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                            &laquo; 처음
+                        </a>
+                        <a href="?{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}page={{ page_obj.previous_page_number }}" 
+                           class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                            이전
+                        </a>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <span class="px-3 py-2 bg-blue-600 text-white rounded">{{ num }}</span>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <a href="?{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}page={{ num }}" 
+                               class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                                {{ num }}
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <a href="?{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}page={{ page_obj.next_page_number }}" 
+                           class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                            다음
+                        </a>
+                        <a href="?{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}page={{ page_obj.paginator.num_pages }}" 
+                           class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                            마지막 &raquo;
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-8">
+                <p class="text-gray-500 mb-4">아직 등록한 강의가 없습니다.</p>
+                <a href="{% url 'courses:course-create' %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors">
+                    첫 강의 만들기
+                </a>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- 최근 리뷰 섹션 -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-bold mb-6">최근 리뷰</h2>
+        
+        {% if recent_reviews %}
+            <div class="space-y-6">
+                {% for review in recent_reviews %}
+                    <div class="border-b border-gray-200 pb-6 {% if not forloop.last %}mb-6{% endif %}">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-bold text-blue-600 hover:underline">
+                                    <a href="{% url 'courses:course-detail' review.course.id %}">
+                                        {{ review.course.title }}
+                                    </a>
+                                </h3>
+                                <div class="flex items-center mb-2 mt-1">
+                                    <div class="flex mr-2">
+                                        {% for i in "12345" %}
+                                            {% if forloop.counter <= review.rating %}
+                                                <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                </svg>
+                                            {% else %}
+                                                <svg class="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                </svg>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    <span class="text-sm text-gray-600">{{ review.user.username }}</span>
+                                </div>
+                                <p class="text-gray-700">{{ review.comment }}</p>
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                {{ review.created_at|date:"Y년 m월 d일" }}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <div class="mt-4 text-right">
+                <a href="{% url 'courses:instructor-reviews' %}" class="text-blue-600 hover:underline">
+                    모든 리뷰 보기
+                </a>
+            </div>
+        {% else %}
+            <p class="text-gray-500 text-center py-6">아직 리뷰가 없습니다.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

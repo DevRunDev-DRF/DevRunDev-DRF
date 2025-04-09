@@ -1,0 +1,23 @@
+<!-- 장바구니 버튼 컴포넌트 -->
+<button hx-post="{% url 'enrollments:cartitem-list' %}" 
+        hx-vals='{"course": {{ course.id }}}' 
+        hx-target="#cart-message-{{ course.id }}" 
+        hx-swap="outerHTML"
+        class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-500 transition-colors">
+    장바구니에 담기
+</button>
+
+<div id="cart-message-{{ course.id }}"></div>
+
+<!-- 추가 성공 시 응답 템플릿 -->
+{% comment %}
+<div id="cart-message-{{ course.id }}" class="mt-2 p-2 bg-green-100 text-green-800 rounded">
+    <div class="flex items-center">
+        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        장바구니에 추가되었습니다.
+        <a href="{% url 'enrollments:cart' %}" class="ml-2 underline">장바구니로 이동</a>
+    </div>
+</div>
+{% endcomment %}
