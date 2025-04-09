@@ -1,11 +1,20 @@
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework import permissions
+from rest_framework.routers import DefaultRouter
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from django.conf import settings
 from .views import home_view
 
+# Courses app의 API 뷰셋 가져오기
+from courses.views import CourseViewSet, SectionViewSet, LessonViewSet
+
+# API 라우터 설정
+router = DefaultRouter()
+router.register(r"courses", CourseViewSet)
+router.register(r"sections", SectionViewSet)
+router.register(r"lessons", LessonViewSet)
 
 # Swagger 문서 스키마 뷰 설정
 schema_view = get_schema_view(
@@ -24,6 +33,10 @@ schema_view = get_schema_view(
 urlpatterns = [
     path("", home_view, name="home"),
     path("admin/", admin.site.urls),
+    # API 엔드포인트 (전역 레벨에서 정의)
+    path("api/", include(router.urls)),
+    path("api-auth/", include("rest_framework.urls")),
+    # 앱별 URL
     path("accounts/", include("accounts.urls")),
     path("courses/", include("courses.urls")),
     path("quizzes/", include("quizzes.urls")),

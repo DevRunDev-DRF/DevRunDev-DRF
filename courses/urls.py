@@ -1,11 +1,6 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
+from django.urls import path
 
 from .views import (
-    # API 뷰셋
-    CourseViewSet,
-    SectionViewSet,
-    LessonViewSet,
     # 템플릿 뷰
     CourseListView,
     CourseDetailView,
@@ -23,23 +18,15 @@ from .views import (
     SearchCoursesView,
 )
 
-# API 라우터 설정
-router = DefaultRouter()
-router.register(r"api/courses", CourseViewSet)
-router.register(r"api/sections", SectionViewSet)
-router.register(r"api/lessons", LessonViewSet)
-
 app_name = "courses"
 
 urlpatterns = [
-    # API 엔드포인트
-    path("", include(router.urls)),
-    # 템플릿 기반 URL
-    path("courses/", CourseListView.as_view(), name="course-list"),
-    path("courses/create/", CourseCreateView.as_view(), name="course-create"),
-    path("courses/<int:pk>/", CourseDetailView.as_view(), name="course-detail"),
-    path("courses/<int:pk>/edit/", CourseUpdateView.as_view(), name="course-edit"),
-    path("courses/<int:pk>/delete/", CourseDeleteView.as_view(), name="course-delete"),
+    # 템플릿 기반 URL (웹 페이지용)
+    path("", CourseListView.as_view(), name="course-list"),
+    path("create/", CourseCreateView.as_view(), name="course-create"),
+    path("<int:pk>/", CourseDetailView.as_view(), name="course-detail"),
+    path("<int:pk>/edit/", CourseUpdateView.as_view(), name="course-edit"),
+    path("<int:pk>/delete/", CourseDeleteView.as_view(), name="course-delete"),
     path("sections/create/", SectionCreateView.as_view(), name="section-create"),
     path("sections/<int:pk>/edit/", SectionUpdateView.as_view(), name="section-edit"),
     path(
