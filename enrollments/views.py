@@ -5,6 +5,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
 
 from .models import Enrollment, LessonProgress, Certificate, CartItem
 from .serializers import (
@@ -278,3 +280,42 @@ class CartItemViewSet(viewsets.ModelViewSet):
                 "enrollments": EnrollmentSerializer(enrollments, many=True).data,
             }
         )
+
+
+def get_cart_count(user):
+    """인증된 사용자의 장바구니 아이템 수를 반환"""
+    if user.is_authenticated:
+        return user.cart_items.count()
+    return 0
+
+
+@login_required
+def cart_view(request):
+    """장바구니 페이지 뷰"""
+    cart_items = request.user.cart_items.select_related("course")
+
+    # 장바구니 총액 계산
+    total_price = sum(item.course.price for item in cart_items)
+
+    context = {
+        "cart_items": cart_items,
+        "total_price": total_price,
+        "cart_count": cart_items.count(),
+    }
+    return render(request, "enrollments/cart.html", context)
+
+
+@login_required
+def my_courses_view(request):
+    """내 강의 페이지 뷰"""
+    from enrollments.models import Enrollment
+
+    enrollments = Enrollment.objects.filter(
+        student=request.user, status__in=["in_progress", "completed"]
+    ).select_related("course")
+
+    context = {
+        "enrollments": enrollments,
+        "cart_count": request.user.cart_items.count(),
+    }
+    return render(request, "enrollments/my_courses.html", context)

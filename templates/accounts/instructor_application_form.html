@@ -8,19 +8,19 @@
             <label for="qualifications" class="block text-gray-700 font-medium mb-2">자격 요건</label>
             <textarea name="qualifications" id="qualifications" rows="3" required
                      class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                     placeholder="관련 자격증, 학위, 경력 등을 작성해주세요">{{ instructor_application.qualifications|default:'' }}</textarea>
+                     placeholder="관련 자격증, 학위, 경력 등을 작성해주세요"></textarea>
         </div>
         
         <div>
             <label for="experience" class="block text-gray-700 font-medium mb-2">강의 경험</label>
             <textarea name="experience" id="experience" rows="3" required
                      class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                     placeholder="이전 강의 경험이나 교육 관련 경험을 작성해주세요">{{ instructor_application.experience|default:'' }}</textarea>
+                     placeholder="이전 강의 경험이나 교육 관련 경험을 작성해주세요"></textarea>
         </div>
         
         <div>
             <label for="sample_video_url" class="block text-gray-700 font-medium mb-2">샘플 강의 URL (선택)</label>
-            <input type="url" name="sample_video_url" id="sample_video_url" value="{{ instructor_application.sample_video_url|default:'' }}"
+            <input type="url" name="sample_video_url" id="sample_video_url"
                    class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                    placeholder="YouTube 또는 다른 비디오 플랫폼의 URL">
             <p class="text-sm text-gray-500 mt-1">샘플 강의 영상이 있다면 URL을 입력해주세요 (선택사항)</p>

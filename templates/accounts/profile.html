@@ -80,13 +80,13 @@
                                     <div class="p-4 bg-red-50 text-red-700 rounded mb-4">
                                         <p>강사 신청이 거부되었습니다. 수정 후 다시 신청해주세요.</p>
                                     </div>
-                                    <button hx-get="{% url 'instructor_application_form' %}" 
+                                    <button hx-get="{% url 'accounts:instructor_application_form' %}" 
                                             hx-target="#instructor-application-form" 
                                             class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-500">
                                         재신청하기
                                     </button>
                                 {% else %}
-                                    <button hx-get="{% url 'instructor_application_form' %}" 
+                                    <button hx-get="{% url 'accounts:instructor_application_form' %}" 
                                             hx-target="#instructor-application-form" 
                                             class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-500">
                                         강사 신청하기
@@ -96,3 +96,10 @@
                                 <div id="instructor-application-form" class="mt-4"></div>
                             </div>
                         {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

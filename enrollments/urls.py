@@ -7,6 +7,8 @@ from .views import (
     LessonProgressViewSet,
     CertificateViewSet,
     CartItemViewSet,
+    cart_view,
+    my_courses_view,
 )
 
 router = DefaultRouter()
@@ -19,4 +21,6 @@ app_name = "enrollments"
 
 urlpatterns = [
     path("", include(router.urls)),
+    path("cart/", cart_view, name="cart"),
+    path("my-courses/", my_courses_view, name="my_courses"),
 ]

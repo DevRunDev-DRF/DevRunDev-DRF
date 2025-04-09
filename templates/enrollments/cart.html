@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}장바구니 - DevRunDev{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">장바구니</h1>
+
+    {% if cart_items %}
+        <div class="bg-white shadow-md rounded-lg overflow-hidden">
+            <div class="divide-y divide-gray-200">
+                {% for item in cart_items %}
+                    <div class="p-4 flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <img src="{{ item.course.thumbnail.url|default:'/static/images/default.jpg' }}" 
+                                 alt="{{ item.course.title }}" 
+                                 class="w-20 h-16 object-cover rounded">
+                            <div>
+                                <h3 class="font-bold text-lg">{{ item.course.title }}</h3>
+                                <p class="text-gray-500">{{ item.course.instructor.username }}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-lg">{{ item.course.price|floatformat:0 }}원</p>
+                            <button hx-delete="{% url 'enrollments:cartitem-detail' item.id %}"
+                                    hx-target="closest div"
+                                    hx-swap="outerHTML"
+                                    class="text-red-500 hover:text-red-700 mt-1">
+                                삭제
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <div class="p-4 bg-gray-50 flex justify-between items-center">
+                <span class="text-lg font-bold">총 결제 금액</span>
+                <span class="text-2xl font-bold text-blue-600">{{ total_price|floatformat:0 }}원</span>
+            </div>
+        </div>
+
+        <div class="mt-6 text-right">
+            <button hx-post="{% url 'enrollments:cartitem-checkout' %}"
+                    hx-target="body"
+                    class="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-500 transition-colors">
+                결제하기
+            </button>
+        </div>
+    {% else %}
+        <div class="bg-white shadow-md rounded-lg p-8 text-center">
+            <p class="text-gray-500 mb-4">장바구니가 비어있습니다.</p>
+            <a href="{% url 'courses:course-list' %}" 
+               class="inline-block bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-500 transition-colors">
+                강의 찾아보기
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

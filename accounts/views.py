@@ -6,6 +6,9 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from django.contrib.auth import logout
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from enrollments.models import Enrollment
 
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -46,6 +49,28 @@ class RegisterView(generics.CreateAPIView):
         },
     )
     def create(self, request, *args, **kwargs):
+        # HTML 요청인 경우
+        if request.accepted_renderer.format == "html":
+            serializer = self.get_serializer(data=request.data)
+            try:
+                serializer.is_valid(raise_exception=True)
+                user = serializer.save()
+
+                # 토큰 생성
+                Token.objects.get_or_create(user=user)
+
+                # Django 로그인
+                django_login(request, user)
+
+                messages.success(request, "회원가입이 완료되었습니다.")
+                return redirect("home")
+            except Exception as e:
+                # 에러 메시지를 템플릿에 전달
+                return render(
+                    request, "accounts/register.html", {"errors": serializer.errors}
+                )
+
+        # API 요청인 경우 (기존 로직 유지)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
@@ -63,6 +88,10 @@ class RegisterView(generics.CreateAPIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+    def get(self, request):
+        """회원가입 폼 렌더링"""
+        return render(request, "accounts/register.html")
 
 
 class LoginView(generics.GenericAPIView):
@@ -92,6 +121,34 @@ class LoginView(generics.GenericAPIView):
         },
     )
     def post(self, request, *args, **kwargs):
+        # content type을 확인하는 더 명확한 방법
+        is_html_request = (
+            request.accepted_renderer.format == "html"
+            or request.content_type == "application/x-www-form-urlencoded"
+        )
+
+        # HTML 요청인 경우
+        if is_html_request:
+            serializer = self.get_serializer(data=request.data)
+            try:
+                serializer.is_valid(raise_exception=True)
+                user = serializer.validated_data["user"]
+
+                # Django 로그인
+                django_login(request, user)
+
+                # 토큰 생성 (선택적)
+                Token.objects.get_or_create(user=user)
+
+                messages.success(request, "로그인되었습니다.")
+                return redirect("home")
+            except Exception as e:
+                # 에러 메시지를 템플릿에 전달
+                return render(
+                    request, "accounts/login.html", {"errors": serializer.errors}
+                )
+
+        # API 요청인 경우 (기존 로직 유지)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
@@ -108,6 +165,39 @@ class LoginView(generics.GenericAPIView):
                 "role": user.role,
             }
         )
+
+    def get(self, request):
+        """로그인 폼 렌더링"""
+        return render(request, "accounts/login.html")
+
+
+@login_required
+def profile_view(request):
+    """사용자 프로필 뷰"""
+    # 강사 신청 상태 확인
+    instructor_application = None
+    try:
+        instructor_application = InstructorApplication.objects.filter(
+            user=request.user
+        ).latest("created_at")
+    except InstructorApplication.DoesNotExist:
+        pass
+
+    # 수강 중인 강의 가져오기
+    enrollments = Enrollment.objects.filter(
+        student=request.user, status__in=["in_progress", "completed"]
+    )
+
+    context = {
+        "instructor_application": instructor_application,
+        "enrollments": enrollments,
+    }
+    return render(request, "accounts/profile.html", context)
+
+
+def instructor_application_form(request):
+    """강사 신청 양식 렌더링"""
+    return render(request, "accounts/instructor_application_form.html")
 
 
 class LogoutView(APIView):

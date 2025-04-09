@@ -1,15 +1,29 @@
 {% extends 'base.html' %}
 
+{% block title %}로그인 - DevRunDev{% endblock %}
+
 {% block content %}
 <div class="max-w-md mx-auto bg-white rounded-lg shadow-md p-8">
     <h1 class="text-2xl font-bold mb-6 text-center">로그인</h1>
     
-    <form hx-post="{% url 'accounts:login' %}" 
-          hx-target="body"  # body 전체 교체
-          hx-swap="innerHTML">
+    <form method="post" action="{% url 'accounts:login' %}">
         {% csrf_token %}
         
-        <div id="login-error" class="hidden mb-4 p-3 bg-red-100 text-red-700 rounded"></div>
+        {% if errors %}
+            <div id="login-error" class="mb-4 p-3 bg-red-100 text-red-700 rounded">
+                {% if errors.non_field_errors %}
+                    {% for error in errors.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                {% else %}
+                    {% for key, error_list in errors.items %}
+                        {% for error in error_list %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    {% endfor %}
+                {% endif %}
+            </div>
+        {% endif %}
         
         <div class="mb-4">
             <label for="email" class="block text-gray-700 font-medium mb-2">이메일</label>
