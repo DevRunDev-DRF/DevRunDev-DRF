@@ -26,6 +26,7 @@ urlpatterns = [
     path("courses/", include("courses.urls")),
     path("quizzes/", include("quizzes.urls")),
     path("enrollments/", include("enrollments.urls")),
+    path("reviews/", include("reviews.urls")),
     # Swagger 문서 URL
     path(
         "swagger<format>/", schema_view.without_ui(cache_timeout=0), name="schema-json"
