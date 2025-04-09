@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white rounded-lg shadow-md p-8">
+    <h1 class="text-2xl font-bold mb-6 text-center">로그인</h1>
+    
+    <form hx-post="{% url 'accounts:login' %}" 
+          hx-target="body"  # body 전체 교체
+          hx-swap="innerHTML">
+        {% csrf_token %}
+        
+        <div id="login-error" class="hidden mb-4 p-3 bg-red-100 text-red-700 rounded"></div>
+        
+        <div class="mb-4">
+            <label for="email" class="block text-gray-700 font-medium mb-2">이메일</label>
+            <input type="email" name="email" id="email" required
+                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        
+        <div class="mb-6">
+            <label for="password" class="block text-gray-700 font-medium mb-2">비밀번호</label>
+            <input type="password" name="password" id="password" required
+                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        
+        <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            로그인
+        </button>
+    </form>
+    
+    <div class="mt-6 text-center">
+        <p class="text-gray-600">계정이 없으신가요? <a href="{% url 'accounts:register' %}" class="text-blue-600 hover:underline">회원가입</a></p>
+    </div>
+</div>
+{% endblock %}
