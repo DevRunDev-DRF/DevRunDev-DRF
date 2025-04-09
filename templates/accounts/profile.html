@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}내 프로필 - DevRunDev{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="bg-blue-700 text-white p-6">
+            <h1 class="text-2xl font-bold">내 프로필</h1>
+        </div>
+        
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h2 class="text-xl font-bold mb-4">계정 정보</h2>
+                    
+                    <form hx-patch="{% url 'accounts:user-update_me' %}" hx-swap="outerHTML" class="space-y-4">
+                        {% csrf_token %}
+                        
+                        <div>
+                            <label for="email" class="block text-gray-700 font-medium mb-2">이메일</label>
+                            <input type="email" name="email" id="email" value="{{ user.email }}" readonly
+                                   class="w-full px-3 py-2 border border-gray-300 rounded bg-gray-100">
+                            <p class="text-sm text-gray-500 mt-1">이메일은 변경할 수 없습니다</p>
+                        </div>
+                        
+                        <div>
+                            <label for="username" class="block text-gray-700 font-medium mb-2">사용자 이름</label>
+                            <input type="text" name="username" id="username" value="{{ user.username }}" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            정보 수정
+                        </button>
+                    </form>
+                    
+                    <div class="mt-8">
+                        <h3 class="text-lg font-bold mb-4">비밀번호 변경</h3>
+                        
+                        <form hx-patch="{% url 'accounts:user-update_me' %}" hx-swap="outerHTML" class="space-y-4">
+                            {% csrf_token %}
+                            
+                            <div>
+                                <label for="password" class="block text-gray-700 font-medium mb-2">새 비밀번호</label>
+                                <input type="password" name="password" id="password" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                비밀번호 변경
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div>
+                    <h2 class="text-xl font-bold mb-4">계정 상태</h2>
+                    
+                    <div class="space-y-4">
+                        <div class="p-4 bg-gray-50 rounded">
+                            <h3 class="font-medium">역할</h3>
+                            <p>{{ user.get_role_display }}</p>
+                        </div>
+                        
+                        <div class="p-4 bg-gray-50 rounded">
+                            <h3 class="font-medium">가입일</h3>
+                            <p>{{ user.date_joined|date:"Y년 m월 d일" }}</p>
+                        </div>
+                        
+                        {% if user.is_student %}
+                            <div class="mt-6">
+                                <h3 class="text-lg font-bold mb-4">강사 신청</h3>
+                                
+                                {% if instructor_application and instructor_application.status == 'PENDING' %}
+                                    <div class="p-4 bg-yellow-50 text-yellow-700 rounded">
+                                        <p>강사 신청이 검토 중입니다. 승인까지 기다려주세요.</p>
+                                    </div>
+                                {% elif instructor_application and instructor_application.status == 'REJECTED' %}
+                                    <div class="p-4 bg-red-50 text-red-700 rounded mb-4">
+                                        <p>강사 신청이 거부되었습니다. 수정 후 다시 신청해주세요.</p>
+                                    </div>
+                                    <button hx-get="{% url 'instructor_application_form' %}" 
+                                            hx-target="#instructor-application-form" 
+                                            class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-500">
+                                        재신청하기
+                                    </button>
+                                {% else %}
+                                    <button hx-get="{% url 'instructor_application_form' %}" 
+                                            hx-target="#instructor-application-form" 
+                                            class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-500">
+                                        강사 신청하기
+                                    </button>
+                                {% endif %}
+                                
+                                <div id="instructor-application-form" class="mt-4"></div>
+                            </div>
+                        {% endif %}
