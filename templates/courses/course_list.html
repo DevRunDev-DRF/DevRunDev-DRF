@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}강의 목록 - DevRunDev{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">강의 목록</h1>
+        
+        {% if user.is_instructor %}
+        <a href="{% url 'courses:course-create' %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors">
+            새 강의 만들기
+        </a>
+        {% endif %}
+    </div>
+    
+    <!-- 필터 및 검색 -->
+    <div class="bg-white p-4 rounded-lg shadow-md mb-6">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label for="search" class="block text-gray-700 font-medium mb-2">검색</label>
+                <input type="text" name="search" id="search" value="{{ request.GET.search|default:'' }}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="강의 제목, 설명">
+            </div>
+            <div>
+                <label for="ordering" class="block text-gray-700 font-medium mb-2">정렬</label>
+                <select name="ordering" id="ordering"
+                        class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="-created_at" {% if request.GET.ordering == '-created_at' %}selected{% endif %}>최신순</option>
+                    <option value="price" {% if request.GET.ordering == 'price' %}selected{% endif %}>가격 낮은순</option>
+                    <option value="-price" {% if request.GET.ordering == '-price' %}selected{% endif %}>가격 높은순</option>
+                    <option value="-avg_rating" {% if request.GET.ordering == '-avg_rating' %}selected{% endif %}>평점 높은순</option>
+                </select>
+            </div>
+            
+            {% if user.is_instructor %}
+            <div>
+                <label for="status" class="block text-gray-700 font-medium mb-2">상태</label>
+                <select name="status" id="status"
+                        class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="" {% if not request.GET.status %}selected{% endif %}>전체</option>
+                    <option value="approved" {% if request.GET.status == 'approved' %}selected{% endif %}>승인 완료</option>
+                    <option value="review" {% if request.GET.status == 'review' %}selected{% endif %}>심사 중</option>
+                    <option value="not_approved" {% if request.GET.status == 'not_approved' %}selected{% endif %}>수정 필요</option>
+                </select>
+            </div>
+            
+            <div>
+                <label for="instructor" class="block text-gray-700 font-medium mb-2">강사</label>
+                <select name="instructor" id="instructor"
+                        class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="" {% if not request.GET.instructor %}selected{% endif %}>전체</option>
+                    <option value="{{ user.id }}" {% if request.GET.instructor == user.id|stringformat:'i' %}selected{% endif %}>내 강의</option>
+                </select>
+            </div>
+            {% endif %}
+            
+            <div class="md:col-span-4 text-right">
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors">
+                    적용
+                </button>
+                <a href="{% url 'courses:course-list' %}" class="ml-2 text-gray-600 hover:text-gray-900">
+                    필터 초기화
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- 강의 목록 -->
+    {% if courses %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for course in courses %}
+                {% include 'courses/course_card.html' with course=course %}
+            {% endfor %}
+        </div>
+        
+        <!-- 페이지네이션 -->
+        {% if is_paginated %}
+        <div class="mt-8 flex justify-center">
+            <div class="flex space-x-1">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                       class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                        &laquo; 처음
+                    </a>
+                    <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                       class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                        이전
+                    </a>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <span class="px-3 py-2 bg-blue-600 text-white rounded">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                            {{ num }}
+                        </a>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                       class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                        다음
+                    </a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                       class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                        마지막 &raquo;
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    {% else %}
+        <div class="bg-white p-8 rounded-lg shadow-md text-center">
+            <p class="text-gray-500 mb-4">검색 결과가 없습니다</p>
+            <a href="{% url 'courses:course-list' %}" class="text-blue-600 hover:underline">
+                모든 강의 보기
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

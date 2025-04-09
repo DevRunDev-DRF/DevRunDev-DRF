@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ lesson.title }} - {{ lesson.section.course.title }} - DevRunDev{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- 강의 헤더 -->
+    <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+        <h1 class="text-2xl font-bold">{{ lesson.title }}</h1>
+        <div class="flex items-center text-gray-600">
+            <a href="{% url 'courses:course-detail' lesson.section.course.id %}" class="hover:underline">
+                {{ lesson.section.course.title }}
+            </a>
+            <span class="mx-2">›</span>
+            <span>{{ lesson.section.title }}</span>
+        </div>
+    </div>
+    
+    <!-- 비디오 및 레슨 내용 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2">
+            <!-- 비디오 플레이어 -->
+            <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+                <div class="aspect-w-16 aspect-h-9">
+                    <iframe src="{{ lesson.video_url }}" frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen class="w-full h-96"></iframe>
+                </div>
+                
+                <div class="p-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">{{ lesson.title }}</h2>
+                        
+                        {% if user == lesson.section.course.instructor %}
+                            <a href="{% url 'courses:lesson-edit' lesson.id %}" class="text-blue-600 hover:underline">
+                                수정
+                            </a>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- 레슨 상태 (수강생인 경우) -->
+                    {% if is_enrolled %}
+                        <div class="flex items-center mb-4" id="lessonProgressContainer">
+                            {% if lesson_progress and lesson_progress.completed %}
+                                <span class="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    완료됨
+                                </span>
+                            {% else %}
+                                <form hx-post="{% url 'enrollments:progress-mark-completed' %}" 
+                                      hx-vals='{"lesson": {{ lesson.id }}}' 
+                                      hx-target="#lessonProgressContainer"
+                                      hx-swap="outerHTML">
+                                    {% csrf_token %}
+                                    <button type="submit" class="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                        완료 표시하기
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- 퀴즈 섹션 (이 레슨에 연결된 퀴즈가 있는 경우) -->
+            {% if quizzes %}
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-bold mb-4">퀴즈</h2>
+                    
+                    <div class="divide-y divide-gray-200">
+                        {% for quiz in quizzes %}
+                            <div class="py-4">
+                                <div class="flex justify-between items-center">
+                                    <h3 class="font-medium">{{ quiz.title }}</h3>
+                                    
+                                    {% if user == lesson.section.course.instructor %}
+                                        <a href="{% url 'quizzes:quiz-edit' quiz.id %}" class="text-blue-600 hover:underline">
+                                            수정
+                                        </a>
+                                    {% else %}
+                                        {% if quiz.attempts.filter.student=user.exists %}
+                                            <a href="{% url 'quizzes:quiz-attempt' quiz.id %}" class="text-blue-600 hover:underline">
+                                                결과 보기
+                                            </a>
+                                        {% else %}
+                                            <a href="{% url 'quizzes:quiz-attempt' quiz.id %}" class="text-blue-600 hover:underline">
+                                                퀴즈 풀기
+                                            </a>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                                <p class="text-sm text-gray-500">{{ quiz.questions.count }}개 문항</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- 사이드바 - 레슨 목록 -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h2 class="text-lg font-bold mb-4">강의 목차</h2>
+                
+                <div class="space-y-4">
+                    {% for section in lesson.section.course.sections.all %}
+                        <div class="border border-gray-200 rounded overflow-hidden">
+                            <div class="bg-gray-50 p-3 font-medium">
+                                섹션 {{ section.order }}: {{ section.title }}
+                            </div>
+                            
+                            <div class="divide-y divide-gray-200">
+                                {% for lesson_item in section.lessons.all %}
+                                    <div class="p-3 flex justify-between items-center
+                                                {% if lesson_item.id == lesson.id %}bg-blue-50{% endif %}">
+                                        <div class="flex items-center">
+                                            {% if lesson_progress_map|get_item:lesson_item.id %}
+                                                <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                </svg>
+                                            {% else %}
+                                                <svg class="w-4 h-4 text-gray-300 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                            {% endif %}
+                                            <span class="{% if lesson_item.id == lesson.id %}font-medium{% endif %}">
+                                                {{ lesson_item.title }}
+                                            </span>
+                                        </div>
+                                        
+                                        {% if lesson_item.id != lesson.id %}
+                                            <a href="{% url 'courses:lesson-detail' lesson_item.id %}" class="text-blue-600 hover:underline text-sm">
+                                                보기
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- 다음/이전 레슨 버튼 -->
+                <div class="flex justify-between mt-6">
+                    {% if prev_lesson %}
+                        <a href="{% url 'courses:lesson-detail' prev_lesson.id %}" 
+                           class="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                            이전 레슨
+                        </a>
+                    {% else %}
+                        <div></div>
+                    {% endif %}
+                    
+                    {% if next_lesson %}
+                        <a href="{% url 'courses:lesson-detail' next_lesson.id %}" 
+                           class="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200">
+                            다음 레슨
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </a>
+                    {% else %}
+                        <a href="{% url 'courses:course-detail' lesson.section.course.id %}" 
+                           class="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200">
+                            강의 완료
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

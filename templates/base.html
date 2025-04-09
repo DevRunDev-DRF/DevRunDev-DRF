@@ -37,7 +37,7 @@
                             <a href="{% url 'accounts:profile' %}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">프로필</a>
                             
                             {% if user.is_instructor %}
-                                <a href="{% url 'instructor_dashboard' %}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">강사 대시보드</a>
+                                <a href="{% url 'courses:instructor-dashboard' %}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">강사 대시보드</a>
                             {% endif %}
                             
                             {% if user.is_student %}
@@ -56,8 +56,8 @@
                         </span>
                     </a>
                 {% else %}
-                    <a href="{% url 'login' %}" class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-500">로그인</a>
-                    <a href="{% url 'register' %}" class="px-4 py-2 rounded bg-white text-blue-700 hover:bg-blue-50">회원가입</a>
+                    <a href="{% url 'accounts:login' %}" class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-500">로그인</a>
+                    <a href="{% url 'accounts:register' %}" class="px-4 py-2 rounded bg-white text-blue-700 hover:bg-blue-50">회원가입</a>
                 {% endif %}
             </div>
         </div>

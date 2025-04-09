@@ -59,8 +59,11 @@ class CourseAPITestCase(APITestCase):
 
         # API 클라이언트
         self.client = APIClient()
-        self.course_list_url = reverse("courses:course-list")
-        self.course_detail_url = reverse("courses:course-detail", args=[self.course.id])
+
+        # API URL
+        self.api_prefix = "/api/"
+        self.course_list_url = f"{self.api_prefix}courses/"
+        self.course_detail_url = f"{self.api_prefix}courses/{self.course.id}/"
 
     def test_get_courses_list_unauthenticated(self):
         """인증되지 않은 사용자의 강의 목록 조회 테스트"""
