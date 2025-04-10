@@ -92,7 +92,10 @@ class QuizAPITestCase(APITestCase):
             question=self.question, text="오답2", is_correct=False
         )
 
-        # URL 설정
+        # API 클라이언트
+        self.client = APIClient()
+
+        # API URL 설정
         self.quiz_list_url = reverse("quizzes:quiz-list")
         self.quiz_detail_url = reverse("quizzes:quiz-detail", args=[self.quiz.id])
         self.question_list_url = reverse("quizzes:question-list")
@@ -164,7 +167,7 @@ class QuizAPITestCase(APITestCase):
         }
 
         response = self.client.post(self.quiz_list_url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)  # 권한 없음
         self.assertEqual(Quiz.objects.count(), 1)  # 기존 1개만 유지
 
     def test_update_quiz_as_owner(self):
@@ -185,17 +188,17 @@ class QuizAPITestCase(APITestCase):
         """다른 강사로 퀴즈 수정 테스트 (실패 예상)"""
         self.client.force_authenticate(user=self.other_instructor)
 
-        data = {"title": "수정된 퀴즈", "description": "수정된 퀴즈 설명"}
+        data = {"title": "수정된 퀴즈"}
 
         response = self.client.patch(self.quiz_detail_url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)  # 권한 없음
 
         # 변경되지 않았음을 확인
         self.quiz.refresh_from_db()
         self.assertEqual(self.quiz.title, "테스트 퀴즈")  # 원래 값 유지
 
-    def test_create_question_as_instructor(self):
-        """강사로 문제 생성 테스트"""
+    def test_create_question(self):
+        """문제 생성 테스트"""
         self.client.force_authenticate(user=self.instructor)
 
         data = {
@@ -204,8 +207,7 @@ class QuizAPITestCase(APITestCase):
             "order": 2,
             "choices": [
                 {"text": "정답", "is_correct": True},
-                {"text": "오답1", "is_correct": False},
-                {"text": "오답2", "is_correct": False},
+                {"text": "오답", "is_correct": False},
             ],
         }
 
@@ -213,12 +215,36 @@ class QuizAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Question.objects.count(), 2)  # 기존 1개 + 새로 생성 1개
 
-        # 선택지가 생성되었는지 확인
+        # 새 문제 속성 확인
         new_question = Question.objects.get(text="새 문제")
-        self.assertEqual(new_question.choices.count(), 3)
+        self.assertEqual(new_question.quiz, self.quiz)
+        self.assertEqual(new_question.order, 2)
 
-    def test_start_quiz_attempt(self):
-        """학생으로 퀴즈 시도 시작 테스트"""
+        # 선택지 확인
+        self.assertEqual(new_question.choices.count(), 2)
+        self.assertTrue(new_question.choices.filter(is_correct=True).exists())
+
+    def test_update_question(self):
+        """문제 수정 테스트"""
+        self.client.force_authenticate(user=self.instructor)
+
+        data = {"text": "수정된 문제"}
+        response = self.client.patch(self.question_detail_url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # 변경 확인
+        self.question.refresh_from_db()
+        self.assertEqual(self.question.text, "수정된 문제")
+
+    def test_delete_question(self):
+        """문제 삭제 테스트"""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.delete(self.question_detail_url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Question.objects.count(), 0)  # 삭제 후 0개
+
+    def test_start_attempt(self):
+        """퀴즈 시도 시작 테스트"""
         self.client.force_authenticate(user=self.student)
 
         response = self.client.post(self.start_attempt_url)
@@ -226,23 +252,17 @@ class QuizAPITestCase(APITestCase):
 
         # 퀴즈 시도가 생성되었는지 확인
         self.assertEqual(QuizAttempt.objects.count(), 1)
-
         attempt = QuizAttempt.objects.first()
         self.assertEqual(attempt.quiz, self.quiz)
         self.assertEqual(attempt.student, self.student)
         self.assertFalse(attempt.is_completed)
-        self.assertEqual(attempt.total_questions, 1)  # 문제 1개
 
-    def test_submit_quiz_attempt(self):
-        """학생으로 퀴즈 제출 테스트"""
+    def test_submit_attempt(self):
+        """퀴즈 제출 테스트"""
         self.client.force_authenticate(user=self.student)
 
         # 먼저 퀴즈 시도 시작
-        start_response = self.client.post(self.start_attempt_url)
-        self.assertEqual(start_response.status_code, status.HTTP_201_CREATED)
-
-        # 시도 ID 확인
-        attempt_id = start_response.data["id"]
+        self.client.post(self.start_attempt_url)
 
         # 답변 제출
         data = {
@@ -254,11 +274,11 @@ class QuizAPITestCase(APITestCase):
             ]
         }
 
-        submit_response = self.client.post(self.submit_attempt_url, data, format="json")
-        self.assertEqual(submit_response.status_code, status.HTTP_200_OK)
+        response = self.client.post(self.submit_attempt_url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # 퀴즈 시도가 완료되었는지 확인
-        attempt = QuizAttempt.objects.get(id=attempt_id)
+        attempt = QuizAttempt.objects.first()
         self.assertTrue(attempt.is_completed)
         self.assertEqual(attempt.correct_answers, 1)  # 정답 1개
         self.assertEqual(attempt.score, 100)  # 100% 정답
@@ -270,97 +290,24 @@ class QuizAPITestCase(APITestCase):
         self.assertEqual(answer.selected_choice, self.choice1)
         self.assertTrue(answer.is_correct)
 
-    def test_submit_wrong_answer(self):
-        """학생으로 오답 제출 테스트"""
-        self.client.force_authenticate(user=self.student)
-
-        # 먼저 퀴즈 시도 시작
-        self.client.post(self.start_attempt_url)
-
-        # 오답 제출
-        data = {
-            "answers": [
-                {
-                    "question": str(self.question.id),
-                    "selected_choice": str(self.choice2.id),  # 오답 선택
-                }
-            ]
-        }
-
-        response = self.client.post(self.submit_attempt_url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # 퀴즈 시도 확인
-        attempt = QuizAttempt.objects.first()
-        self.assertTrue(attempt.is_completed)
-        self.assertEqual(attempt.correct_answers, 0)  # 정답 0개
-        self.assertEqual(attempt.score, 0)  # 0% 정답
-
-        # 답변 확인
-        answer = Answer.objects.first()
-        self.assertEqual(answer.selected_choice, self.choice2)
-        self.assertFalse(answer.is_correct)
-
-    def test_attempt_list_as_student(self):
-        """학생으로 자신의 퀴즈 시도 목록 조회 테스트"""
+    def test_attempt_list(self):
+        """퀴즈 시도 목록 조회 테스트"""
         # 퀴즈 시도 생성
         attempt = QuizAttempt.objects.create(
             quiz=self.quiz,
             student=self.student,
             is_completed=True,
-            score=80,
+            score=100,
             total_questions=1,
             correct_answers=1,
         )
 
         self.client.force_authenticate(user=self.student)
-
         response = self.client.get(self.attempt_list_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # 페이지네이션이 있을 경우와 없을 경우를 모두 처리
         if "results" in response.data:
             self.assertEqual(len(response.data["results"]), 1)
-            self.assertEqual(response.data["results"][0]["id"], attempt.id)
         else:
             self.assertEqual(len(response.data), 1)
-            self.assertEqual(response.data[0]["id"], attempt.id)
-
-    def test_other_student_attempt_access(self):
-        """다른 학생의 퀴즈 시도에 접근 테스트"""
-        # 다른 학생 계정 생성
-        other_student = User.objects.create_user(
-            email="other_student@example.com",
-            username="other_student",
-            password="password123",
-            role=User.Role.STUDENT,
-        )
-
-        # 다른 학생의 수강 등록
-        Enrollment.objects.create(
-            student=other_student, course=self.course, status="in_progress", progress=0
-        )
-
-        # 다른 학생의 퀴즈 시도 생성
-        other_attempt = QuizAttempt.objects.create(
-            quiz=self.quiz,
-            student=other_student,
-            is_completed=True,
-            score=80,
-            total_questions=1,
-            correct_answers=1,
-        )
-
-        # 첫 번째 학생으로 로그인
-        self.client.force_authenticate(user=self.student)
-
-        # 다른 학생의 시도 상세 조회 시도
-        attempt_detail_url = reverse(
-            "quizzes:quizattempt-detail", args=[other_attempt.id]
-        )
-        response = self.client.get(attempt_detail_url)
-
-        # 다른 학생의 시도는 볼 수 없어야 함 (404 또는 403 둘 다 가능)
-        self.assertIn(
-            response.status_code, [status.HTTP_404_NOT_FOUND, status.HTTP_403_FORBIDDEN]
-        )

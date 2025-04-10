@@ -1,0 +1,19 @@
+<!-- 퀴즈 문제 네비게이션 -->
+<div class="bg-gray-100 p-3 rounded mb-4">
+    <div class="text-sm font-medium mb-2">문제 이동하기:</div>
+    <div class="flex flex-wrap gap-2">
+        {% for q in questions %}
+            <a href="#question-{{ q.id }}" 
+               class="w-8 h-8 flex items-center justify-center rounded-full
+                     {% if current_question.id == q.id %}
+                        bg-blue-600 text-white
+                     {% elif answered_questions and q.id in answered_questions %}
+                        bg-green-100 text-green-800
+                     {% else %}
+                        bg-white text-gray-700 border border-gray-300
+                     {% endif %}">
+                {{ forloop.counter }}
+            </a>
+        {% endfor %}
+    </div>
+</div>

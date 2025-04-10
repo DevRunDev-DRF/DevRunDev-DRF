@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}퀴즈 목록 - DevRunDev{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">퀴즈 목록</h1>
+        
+        {% if user.is_instructor %}
+        <a href="{% url 'quizzes:quiz-create' %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors">
+            새 퀴즈 만들기
+        </a>
+        {% endif %}
+    </div>
+    
+    <!-- 필터 -->
+    <div class="bg-white p-4 rounded-lg shadow-md mb-6">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label for="course" class="block text-gray-700 font-medium mb-2">강의</label>
+                <select name="course" id="course"
+                        class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">모든 강의</option>
+                    {% for course in courses %}
+                        <option value="{{ course.id }}" {% if request.GET.course == course.id|stringformat:'i' %}selected{% endif %}>
+                            {{ course.title }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            {% if user.is_instructor %}
+            <div>
+                <label for="status" class="block text-gray-700 font-medium mb-2">내 퀴즈만</label>
+                <select name="instructor" id="instructor"
+                        class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">모든 퀴즈</option>
+                    <option value="{{ user.id }}" {% if request.GET.instructor == user.id|stringformat:'i' %}selected{% endif %}>내 퀴즈만</option>
+                </select>
+            </div>
+            {% endif %}
+            
+            <div class="md:flex items-end">
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors mt-6 w-full">
+                    적용
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- 퀴즈 목록 -->
+    {% if quizzes %}
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <ul class="divide-y divide-gray-200">
+                {% for quiz in quizzes %}
+                    <li class="p-4 hover:bg-gray-50">
+                        <div class="flex justify-between">
+                            <div>
+                                <a href="{% url 'quizzes:quiz-detail' quiz.id %}" class="text-lg font-medium text-blue-600 hover:underline">
+                                    {{ quiz.title }}
+                                </a>
+                                <p class="text-sm text-gray-500">
+                                    강의: {{ quiz.course.title }} | 
+                                    문제 수: {{ quiz.questions.count }} | 
+                                    출제자: {{ quiz.instructor.username }}
+                                </p>
+                            </div>
+                            
+                            <div class="flex items-center">
+                                {% if user == quiz.instructor %}
+                                    <a href="{% url 'quizzes:quiz-edit' quiz.id %}" class="text-blue-600 hover:underline mr-4">
+                                        수정
+                                    </a>
+                                {% endif %}
+                                
+                                {% if user_completed_quizzes and quiz.id in user_completed_quizzes %}
+                                    <a href="{% url 'quizzes:quiz-result' quiz.id %}" class="px-3 py-1 bg-green-100 text-green-700 rounded">
+                                        완료됨
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'quizzes:quiz-attempt' quiz.id %}" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-500">
+                                        퀴즈 풀기
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <!-- 페이지네이션 -->
+        {% if is_paginated %}
+        <div class="mt-6 flex justify-center">
+            <div class="flex space-x-1">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                       class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                        &laquo; 처음
+                    </a>
+                    <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                       class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                        이전
+                    </a>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <span class="px-3 py-2 bg-blue-600 text-white rounded">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                            {{ num }}
+                        </a>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                       class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                        다음
+                    </a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                       class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                        마지막 &raquo;
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    {% else %}
+        <div class="bg-white p-8 rounded-lg shadow-md text-center">
+            <p class="text-gray-500 mb-4">퀴즈가 없습니다.</p>
+            {% if user.is_instructor %}
+                <a href="{% url 'quizzes:quiz-create' %}" class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors">
+                    첫 퀴즈 만들기
+                </a>
+            {% else %}
+                <p>강의 상세 페이지에서 퀴즈를 확인해보세요.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if quiz.id %}퀴즈 수정{% else %}새 퀴즈 만들기{% endif %} - DevRunDev{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h1 class="text-2xl font-bold mb-6">{% if quiz.id %}퀴즈 수정{% else %}새 퀴즈 만들기{% endif %}</h1>
+        
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            {% if form_errors %}
+                <div class="p-4 bg-red-50 text-red-700 rounded mb-4">
+                    {% for error in form_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            <div>
+                <label for="id_title" class="block text-gray-700 font-medium mb-2">퀴즈 제목</label>
+                <input type="text" name="title" id="id_title" value="{{ quiz.title|default:'' }}" required
+                       class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="퀴즈 제목을 입력하세요">
+            </div>
+            
+            <div>
+                <label for="id_description" class="block text-gray-700 font-medium mb-2">퀴즈 설명 (선택사항)</label>
+                <textarea name="description" id="id_description" rows="3"
+                         class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                         placeholder="퀴즈에 대한 설명을 입력하세요">{{ quiz.description|default:'' }}</textarea>
+            </div>
+            
+            <div>
+                <label for="id_course" class="block text-gray-700 font-medium mb-2">강의</label>
+                <select name="course" id="id_course" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">-- 강의 선택 --</option>
+                    {% for course in courses %}
+                        <option value="{{ course.id }}" {% if quiz.course_id == course.id or course_id == course.id %}selected{% endif %}>
+                            {{ course.title }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div id="sectionsContainer" class="{% if not quiz.course_id and not course_id %}hidden{% endif %}">
+                <label for="id_section" class="block text-gray-700 font-medium mb-2">섹션 (선택사항)</label>
+                <select name="section" id="id_section"
+                        class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">-- 섹션 선택 --</option>
+                    {% if sections %}
+                        {% for section in sections %}
+                            <option value="{{ section.id }}" {% if quiz.section_id == section.id %}selected{% endif %}>
+                                {{ section.title }}
+                            </option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+            
+            <div id="lessonsContainer" class="{% if not quiz.section_id %}hidden{% endif %}">
+                <label for="id_lesson" class="block text-gray-700 font-medium mb-2">레슨 (선택사항)</label>
+                <select name="lesson" id="id_lesson"
+                        class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">-- 레슨 선택 --</option>
+                    {% if lessons %}
+                        {% for lesson in lessons %}
+                            <option value="{{ lesson.id }}" {% if quiz.lesson_id == lesson.id %}selected{% endif %}>
+                                {{ lesson.title }}
+                            </option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+            
+            <div class="flex justify-between pt-4">
+                <a href="{% if quiz.id %}{% url 'quizzes:quiz-detail' quiz.id %}{% else %}{% url 'quizzes:quiz-list' %}{% endif %}" 
+                   class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50">
+                    취소
+                </a>
+                
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500">
+                    {% if quiz.id %}변경사항 저장{% else %}퀴즈 생성{% endif %}
+                </button>
+            </div>
+        </form>
+        
+        {% if quiz.id %}
+            <div class="mt-10 pt-6 border-t border-gray-200">
+                <h2 class="text-xl font-bold mb-4 text-red-600">위험 구역</h2>
+                <p class="text-gray-700 mb-4">
+                    이 퀴즈를 삭제하면 연관된 모든 문제와 데이터가 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+                </p>
+                <form method="post" action="{% url 'quizzes:quiz-delete' quiz.id %}" 
+                      onsubmit="return confirm('정말 이 퀴즈를 삭제하시겠습니까?');">
+                    {% csrf_token %}
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                        퀴즈 삭제
+                    </button>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 강의 선택 시 섹션 목록 가져오기
+    document.getElementById('id_course').addEventListener('change', function() {
+        const courseId = this.value;
+        const sectionsContainer = document.getElementById('sectionsContainer');
+        const sectionsSelect = document.getElementById('id_section');
+        const lessonsContainer = document.getElementById('lessonsContainer');
+        
+        if (courseId) {
+            // 섹션 선택 표시
+            sectionsContainer.classList.remove('hidden');
+            
+            // 섹션 데이터 가져오기 (AJAX 요청)
+            fetch(`/api/sections/?course_id=${courseId}`)
+                .then(response => response.json())
+                .then(data => {
+                    // 기존 옵션 제거
+                    sectionsSelect.innerHTML = '<option value="">-- 섹션 선택 --</option>';
+                    
+                    // 새 섹션 옵션 추가
+                    if (data.results && data.results.length > 0) {
+                        data.results.forEach(section => {
+                            const option = document.createElement('option');
+                            option.value = section.id;
+                            option.textContent = section.title;
+                            sectionsSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => console.error('섹션 데이터 가져오기 오류:', error));
+            
+            // 레슨 선택 숨기기
+            lessonsContainer.classList.add('hidden');
+            document.getElementById('id_lesson').innerHTML = '<option value="">-- 레슨 선택 --</option>';
+        } else {
+            // 모두 숨기기
+            sectionsContainer.classList.add('hidden');
+            lessonsContainer.classList.add('hidden');
+            
+            // 옵션 초기화
+            sectionsSelect.innerHTML = '<option value="">-- 섹션 선택 --</option>';
+            document.getElementById('id_lesson').innerHTML = '<option value="">-- 레슨 선택 --</option>';
+        }
+    });
+    
+    // 섹션 선택 시 레슨 목록 가져오기
+    document.getElementById('id_section').addEventListener('change', function() {
+        const sectionId = this.value;
+        const lessonsContainer = document.getElementById('lessonsContainer');
+        const lessonsSelect = document.getElementById('id_lesson');
+        
+        if (sectionId) {
+            // 레슨 선택 표시
+            lessonsContainer.classList.remove('hidden');
+            
+            // 레슨 데이터 가져오기 (AJAX 요청)
+            fetch(`/api/lessons/?section_id=${sectionId}`)
+                .then(response => response.json())
+                .then(data => {
+                    // 기존 옵션 제거
+                    lessonsSelect.innerHTML = '<option value="">-- 레슨 선택 --</option>';
+                    
+                    // 새 레슨 옵션 추가
+                    if (data.results && data.results.length > 0) {
+                        data.results.forEach(lesson => {
+                            const option = document.createElement('option');
+                            option.value = lesson.id;
+                            option.textContent = lesson.title;
+                            lessonsSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => console.error('레슨 데이터 가져오기 오류:', error));
+        } else {
+            // 레슨 선택 숨기기
+            lessonsContainer.classList.add('hidden');
+            lessonsSelect.innerHTML = '<option value="">-- 레슨 선택 --</option>';
+        }
+    });
+</script>
+{% endblock %}

@@ -326,9 +326,8 @@
             <h2 class="text-xl font-bold">퀴즈</h2>
             
             {% if user == course.instructor %}
-                <a href="{% url 'quizzes:quiz-create' %}?course_id={{ course.id }}" 
-                class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-500 transition-colors">
-                    퀴즈 만들기
+                <a href="{% url 'quizzes:quiz-create' %}?course_id={{ course.id }}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors">
+                    새 퀴즈 만들기
                 </a>
             {% endif %}
         </div>
