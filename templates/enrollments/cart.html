@@ -22,14 +22,11 @@
                         </div>
                         <div class="text-right">
                             <p class="font-bold text-lg">{{ item.course.price|floatformat:0 }}원</p>
-                            <button hx-delete="/api/cart/{{ item.id }}/"
-                                    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-                                    hx-target="closest div.p-4"
-                                    hx-swap="outerHTML"
-                                    hx-trigger-after-swap="updateCartCount"
-                                    class="text-red-500 hover:text-red-700 mt-1">
+                            <a href="{% url 'enrollments:delete-cart-item' item.id %}" 
+                                onclick="return confirm('정말 이 항목을 장바구니에서 삭제하시겠습니까?');"
+                                class="text-red-500 hover:text-red-700 mt-1">
                                 삭제
-                            </button>
+                            </a>
                         </div>
                     </div>
                 {% endfor %}

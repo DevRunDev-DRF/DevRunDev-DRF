@@ -215,8 +215,6 @@ class CertificateViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class CartItemViewSet(viewsets.ModelViewSet):
-    """장바구니 아이템 관련 API 뷰셋"""
-
     queryset = CartItem.objects.all()
     serializer_class = CartItemSerializer
 
@@ -229,18 +227,17 @@ class CartItemViewSet(viewsets.ModelViewSet):
         return CartItem.objects.filter(user=self.request.user)
 
     def create(self, request, *args, **kwargs):
+        # 요청 헤더 확인
+        is_html_request = (
+            getattr(request, "accepted_renderer", None)
+            and getattr(request.accepted_renderer, "format", None) == "html"
+        ) or request.content_type == "application/x-www-form-urlencoded"
+
         course_id = request.data.get("course")
         course = get_object_or_404(Course, id=course_id)
 
-        # HTML 폼 제출인지 확인 (Content-Type 확인)
-        is_html_request = (
-            request.accepted_renderer.format == "html"
-            or request.content_type == "application/x-www-form-urlencoded"
-        )
-
         if Enrollment.objects.filter(student=request.user, course=course).exists():
             if is_html_request:
-                messages.error(request, "이미 수강 중인 강의입니다.")
                 return redirect("enrollments:cart-view")
             return Response(
                 {"detail": "이미 수강 중인 강의입니다."},
@@ -249,7 +246,6 @@ class CartItemViewSet(viewsets.ModelViewSet):
 
         if CartItem.objects.filter(user=request.user, course=course).exists():
             if is_html_request:
-                # 이미 장바구니에 있으면 장바구니 페이지로 이동
                 return redirect("enrollments:cart-view")
             return Response(
                 {"detail": "이미 장바구니에 추가된 강의입니다."},
@@ -257,7 +253,6 @@ class CartItemViewSet(viewsets.ModelViewSet):
             )
 
         # 장바구니에 추가
-        # request.data를 직접 수정하지 않고 새 데이터 사전 생성
         data = {"course": course_id, "user": request.user.id}
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
@@ -267,7 +262,7 @@ class CartItemViewSet(viewsets.ModelViewSet):
         if is_html_request:
             return redirect("enrollments:cart-view")
 
-        # API 요청인 경우 장바구니 개수 반환 (기존과 동일)
+        # API 요청인 경우 장바구니 개수 반환
         cart_count = CartItem.objects.filter(user=request.user).count()
         return Response(str(cart_count), status=status.HTTP_201_CREATED)
 
@@ -278,8 +273,20 @@ class CartItemViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         self.perform_destroy(instance)
 
+        # HTML 요청인지 확인 (Content-Type 또는 HTMX 헤더 확인)
+        is_html_request = (
+            request.accepted_renderer.format == "html"
+            or request.content_type == "application/x-www-form-urlencoded"
+            or "HX-Request" in request.headers
+        )
+
+        # HTML 요청인 경우 장바구니 페이지로 리다이렉트
+        if is_html_request and "HX-Request" not in request.headers:
+            messages.success(request, "항목이 장바구니에서 삭제되었습니다.")
+            return redirect("enrollments:cart-view")
+
         # HTMX 요청인 경우 장바구니 아이템 카운트 갱신
-        if request.headers.get("HX-Request"):
+        if "HX-Request" in request.headers:
             cart_count = CartItem.objects.filter(user=request.user).count()
             headers = {
                 "HX-Trigger-After-Swap": '{"updateCartCount": "'
@@ -288,7 +295,18 @@ class CartItemViewSet(viewsets.ModelViewSet):
             }
             return Response(status=status.HTTP_204_NO_CONTENT, headers=headers)
 
+        # API 요청인 경우 기존 동작 유지
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def get_object(self):
+        # _method 파라미터가 있는지 확인
+        if (
+            self.request.method == "POST"
+            and self.request.POST.get("_method") == "DELETE"
+        ):
+            self.request.method = "DELETE"
+
+        return super().get_object()
 
     @action(detail=False, methods=["post"])
     def checkout(self, request):
@@ -329,6 +347,16 @@ class CartItemViewSet(viewsets.ModelViewSet):
                 "enrollments": EnrollmentSerializer(enrollments, many=True).data,
             }
         )
+
+
+@login_required
+def delete_cart_item(request, item_id):
+    """장바구니 항목 삭제 뷰"""
+    # 현재 사용자의 장바구니 항목만 삭제 가능
+    cart_item = get_object_or_404(CartItem, id=item_id, user=request.user)
+    cart_item.delete()
+    messages.success(request, "장바구니에서 항목이 삭제되었습니다.")
+    return redirect("enrollments:cart-view")
 
 
 @login_required

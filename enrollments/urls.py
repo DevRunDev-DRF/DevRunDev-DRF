@@ -8,6 +8,7 @@ from .views import (
     CartItemViewSet,
     cart_view,
     my_courses_view,
+    delete_cart_item,
 )
 
 router = DefaultRouter()
@@ -23,4 +24,5 @@ urlpatterns = [
     # 템플릿 뷰 경로 추가/수정
     path("cart-view/", cart_view, name="cart-view"),  # 새 템플릿 뷰 경로
     path("my-courses/", my_courses_view, name="my_courses"),
+    path("cart/<int:item_id>/delete/", delete_cart_item, name="delete-cart-item"),
 ]
