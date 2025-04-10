@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}접근 권한 없음 - DevRunDev{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto">
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="bg-yellow-600 text-white p-4">
+            <h1 class="text-xl font-bold">접근 권한 없음</h1>
+        </div>
+        
+        <div class="p-6 text-center">
+            <svg class="w-16 h-16 mx-auto text-yellow-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+            </svg>
+            
+            <h2 class="text-2xl font-bold mb-4">{{ title|default:"접근 권한이 없습니다" }}</h2>
+            <p class="text-gray-600 mb-6">
+                {{ message|default:"이 기능을 사용하기 위한 권한이 없습니다." }}
+            </p>
+            
+            {% if suggestion %}
+                <div class="bg-blue-50 text-blue-700 p-4 rounded mb-6 inline-block">
+                    {{ suggestion|safe }}
+                </div>
+            {% endif %}
+            
+            <div class="flex justify-center">
+                <a href="{{ back_url|default:'/' }}" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-500">
+                    {{ back_text|default:"홈으로 이동" }}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+<!-- 퀴즈 타이머 컴포넌트 -->
+{% if time_limit %}
+<div id="quiz-timer" class="bg-blue-50 p-3 rounded mb-4 flex items-center" 
+     data-time-limit="{{ time_limit }}"
+     data-start-time="{{ start_time|date:'U' }}">
+    <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+    </svg>
+    <div>
+        <span class="font-medium">남은 시간:</span>
+        <span id="timer-display">--:--</span>
+    </div>
+</div>
+
+<script>
+    // 타이머 함수
+    document.addEventListener('DOMContentLoaded', function() {
+        const timerElement = document.getElementById('quiz-timer');
+        if (!timerElement) return;
+        
+        const timeLimit = parseInt(timerElement.dataset.timeLimit) || 0;
+        const startTime = parseInt(timerElement.dataset.startTime) || 0;
+        
+        if (timeLimit <= 0 || startTime <= 0) return;
+        
+        const timerDisplay = document.getElementById('timer-display');
+        const currentTime = Math.floor(Date.now() / 1000);
+        let remainingSeconds = (startTime + timeLimit) - currentTime;
+        
+        function updateTimer() {
+            if (remainingSeconds <= 0) {
+                timerDisplay.textContent = '00:00';
+                timerElement.classList.remove('bg-blue-50');
+                timerElement.classList.add('bg-red-100');
+                
+                // 자동 제출 로직 (필요시)
+                document.getElementById('quizForm').submit();
+                return;
+            }
+            
+            const minutes = Math.floor(remainingSeconds / 60);
+            const seconds = remainingSeconds % 60;
+            
+            timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (remainingSeconds <= 60) {
+                timerElement.classList.remove('bg-blue-50');
+                timerElement.classList.add('bg-red-100', 'animate-pulse');
+            } else if (remainingSeconds <= 300) {
+                timerElement.classList.remove('bg-blue-50');
+                timerElement.classList.add('bg-yellow-100');
+            }
+            
+            remainingSeconds--;
+        }
+        
+        // 초기 업데이트 및 타이머 시작
+        updateTimer();
+        const timerInterval = setInterval(updateTimer, 1000);
+        
+        // 페이지 언로드 시 타이머 정리
+        window.addEventListener('beforeunload', function() {
+            clearInterval(timerInterval);
+        });
+    });
+</script>
+{% endif %}

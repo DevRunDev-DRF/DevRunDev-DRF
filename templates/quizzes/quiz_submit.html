@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}퀴즈 제출 - {{ quiz.title }} - DevRunDev{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="bg-blue-700 text-white p-4">
+            <h1 class="text-xl font-bold">{{ quiz.title }} - 제출 확인</h1>
+            <p class="text-sm opacity-80">{{ quiz.course.title }}</p>
+        </div>
+        
+        <div class="p-6 text-center">
+            <svg class="w-16 h-16 mx-auto text-blue-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            
+            <h2 class="text-2xl font-bold mb-4">퀴즈를 제출하시겠습니까?</h2>
+            <p class="text-gray-600 mb-6">
+                퀴즈를 제출하면 다시 수정할 수 없습니다.<br>
+                총 {{ questions_count }}개의 문제 중 {{ answered_count }}개에 답변하셨습니다.
+            </p>
+            
+            {% if unanswered_questions %}
+                <div class="mb-6 bg-yellow-50 p-4 rounded text-left">
+                    <p class="font-medium text-yellow-800 mb-2">답변하지 않은 문제:</p>
+                    <ul class="list-disc list-inside text-yellow-700">
+                        {% for q in unanswered_questions %}
+                            <li>문제 {{ q.order }}: {{ q.text|truncatechars:50 }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+            
+            <div class="flex justify-center space-x-4">
+                <a href="{% url 'quizzes:quiz-attempt' quiz.id %}" class="px-6 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                    돌아가기
+                </a>
+                
+                <form method="post" action="{% url 'quizzes:quiz-submit' quiz.id %}">
+                    {% csrf_token %}
+                    {% for question_id, choice_id in answers.items %}
+                        <input type="hidden" name="answer_{{ question_id }}" value="{{ choice_id }}">
+                    {% endfor %}
+                    <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-500">
+                        제출하기
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

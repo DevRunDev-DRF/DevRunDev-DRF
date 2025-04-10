@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ quiz.title }} - DevRunDev{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="mb-4">
+        <a href="{% url 'courses:course-detail' quiz.course.id %}" class="text-blue-600 hover:underline">
+            <span class="inline-flex items-center">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                {{ quiz.course.title }}로 돌아가기
+            </span>
+        </a>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+        <div class="p-6">
+            <div class="flex justify-between items-start mb-4">
+                <h1 class="text-2xl font-bold">{{ quiz.title }}</h1>
+                
+                {% if user == quiz.instructor %}
+                <a href="{% url 'quizzes:quiz-edit' quiz.id %}" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-500 transition-colors">
+                    수정
+                </a>
+                {% endif %}
+            </div>
+            
+            <div class="text-gray-600 mb-4">{{ quiz.description }}</div>
+            
+            <div class="flex flex-wrap text-sm mb-6">
+                <div class="mr-6 mb-2">
+                    <span class="font-medium">출제자:</span> {{ quiz.instructor.username }}
+                </div>
+                <div class="mr-6 mb-2">
+                    <span class="font-medium">강의:</span> {{ quiz.course.title }}
+                </div>
+                {% if quiz.section %}
+                <div class="mr-6 mb-2">
+                    <span class="font-medium">섹션:</span> {{ quiz.section.title }}
+                </div>
+                {% endif %}
+                {% if quiz.lesson %}
+                <div class="mr-6 mb-2">
+                    <span class="font-medium">레슨:</span> {{ quiz.lesson.title }}
+                </div>
+                {% endif %}
+                <div class="mr-6 mb-2">
+                    <span class="font-medium">문제 수:</span> {{ quiz.questions.count }}개
+                </div>
+                <div class="mr-6 mb-2">
+                    <span class="font-medium">생성일:</span> {{ quiz.created_at|date:"Y년 m월 d일" }}
+                </div>
+            </div>
+            
+            {% if user == quiz.instructor %}
+                <div class="mb-4">
+                    <h2 class="text-lg font-bold mb-2">문제 목록</h2>
+                    {% if quiz.questions.exists %}
+                        <ul class="divide-y divide-gray-200 border rounded">
+                            {% for question in quiz.questions.all %}
+                                <li class="p-3 hover:bg-gray-50">
+                                    <div class="flex justify-between">
+                                        <div>
+                                            <p class="font-medium">{{ forloop.counter }}. {{ question.text }}</p>
+                                            <div class="ml-4 mt-1">
+                                                {% for choice in question.choices.all %}
+                                                    <div class="flex items-center">
+                                                        <span class="w-4 h-4 inline-flex items-center justify-center mr-2 {% if choice.is_correct %}text-green-600 font-bold{% endif %}">
+                                                            {% if choice.is_correct %}✓{% else %}•{% endif %}
+                                                        </span>
+                                                        <span>{{ choice.text }}</span>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <a href="{% url 'quizzes:question-edit' question.id %}" class="text-blue-600 hover:underline">수정</a>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        
+                        <div class="mt-4">
+                            <a href="{% url 'quizzes:question-create' %}?quiz={{ quiz.id }}" class="inline-flex items-center text-blue-600 hover:underline">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                </svg>
+                                문제 추가하기
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="bg-yellow-50 border border-yellow-200 p-4 rounded text-yellow-700">
+                            <p>아직 퀴즈에 문제가 없습니다. 문제를 추가해주세요.</p>
+                            <a href="{% url 'quizzes:question-create' %}?quiz={{ quiz.id }}" class="mt-2 inline-block bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-500 transition-colors">
+                                첫 문제 추가하기
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                {% if quiz.attempts.exists %}
+                    <div>
+                        <h2 class="text-lg font-bold mb-2">퀴즈 시도 현황</h2>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">학생</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">완료 여부</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">점수</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">완료 시간</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    {% for attempt in quiz.attempts.all %}
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap">{{ attempt.student.username }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                {% if attempt.is_completed %}
+                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                        완료
+                                                    </span>
+                                                {% else %}
+                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                                        진행 중
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                {% if attempt.is_completed %}
+                                                    {{ attempt.score }}점
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                {% if attempt.completed_at %}
+                                                    {{ attempt.completed_at|date:"Y-m-d H:i" }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="flex justify-center mt-6">
+                    {% if user_attempt %}
+                        {% if user_attempt.is_completed %}
+                            <a href="{% url 'quizzes:quiz-result' quiz.id %}" class="bg-green-600 text-white px-6 py-3 rounded hover:bg-green-500 transition-colors">
+                                퀴즈 결과 보기
+                            </a>
+                        {% else %}
+                            <a href="{% url 'quizzes:quiz-attempt' quiz.id %}" class="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-500 transition-colors">
+                                퀴즈 계속하기
+                            </a>
+                        {% endif %}
+                    {% else %}
+                        <a href="{% url 'quizzes:quiz-attempt' quiz.id %}" class="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-500 transition-colors">
+                            퀴즈 시작하기
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

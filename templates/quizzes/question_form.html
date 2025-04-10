@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if question.id %}문제 수정{% else %}새 문제 만들기{% endif %} - DevRunDev{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="mb-4">
+        <a href="{% if question.id %}{% url 'quizzes:quiz-detail' question.quiz.id %}{% elif quiz_id %}{% url 'quizzes:quiz-detail' quiz_id %}{% else %}{% url 'quizzes:quiz-list' %}{% endif %}" class="text-blue-600 hover:underline">
+            <span class="inline-flex items-center">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                퀴즈로 돌아가기
+            </span>
+        </a>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h1 class="text-2xl font-bold mb-6">{% if question.id %}문제 수정{% else %}새 문제 만들기{% endif %}</h1>
+        
+        <form method="post" class="space-y-6" id="questionForm">
+            {% csrf_token %}
+            
+            {% if form_errors %}
+                <div class="p-4 bg-red-50 text-red-700 rounded mb-4">
+                    {% for error in form_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            {% if not question.id %}
+                <input type="hidden" name="quiz" value="{{ quiz_id }}">
+            {% endif %}
+            
+            <div>
+                <label for="id_text" class="block text-gray-700 font-medium mb-2">문제 내용</label>
+                <textarea name="text" id="id_text" rows="3" required
+                         class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                         placeholder="문제 내용을 입력하세요">{{ question.text|default:'' }}</textarea>
+            </div>
+            
+            <div>
+                <label for="id_order" class="block text-gray-700 font-medium mb-2">문제 순서</label>
+                <input type="number" name="order" id="id_order" value="{{ question.order|default:'' }}" min="1"
+                       class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="문제 순서 (숫자)">
+                <p class="text-sm text-gray-500 mt-1">비워두면 자동으로 마지막 순서로 설정됩니다.</p>
+            </div>
+            
+            <div class="border-t pt-4">
+                <h2 class="text-lg font-bold mb-4">선택지</h2>
+                <p class="text-sm text-gray-500 mb-4">최소 2개 이상의 선택지가 필요하며, 정답을 하나 이상 표시해주세요.</p>
+                
+                <div id="choicesContainer">
+                    {% if question.id %}
+                        {% for choice in question.choices.all %}
+                            <div class="choice-item bg-gray-50 p-3 rounded mb-3">
+                                <div class="flex items-center mb-2">
+                                    <input type="checkbox" name="is_correct_{{ forloop.counter }}" id="is_correct_{{ forloop.counter }}" 
+                                           class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-2"
+                                           {% if choice.is_correct %}checked{% endif %}>
+                                    <label for="is_correct_{{ forloop.counter }}" class="text-gray-700">정답</label>
+                                    
+                                    <button type="button" class="ml-auto text-red-600 hover:text-red-800 remove-choice">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <input type="text" name="choice_text_{{ forloop.counter }}" value="{{ choice.text }}" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                       placeholder="선택지 내용">
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <!-- 기본 선택지 2개 -->
+                        <div class="choice-item bg-gray-50 p-3 rounded mb-3">
+                            <div class="flex items-center mb-2">
+                                <input type="checkbox" name="is_correct_1" id="is_correct_1" 
+                                       class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-2">
+                                <label for="is_correct_1" class="text-gray-700">정답</label>
+                                
+                                <button type="button" class="ml-auto text-red-600 hover:text-red-800 remove-choice">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <input type="text" name="choice_text_1" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   placeholder="선택지 내용">
+                        </div>
+                        
+                        <div class="choice-item bg-gray-50 p-3 rounded mb-3">
+                            <div class="flex items-center mb-2">
+                                <input type="checkbox" name="is_correct_2" id="is_correct_2" 
+                                       class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-2">
+                                <label for="is_correct_2" class="text-gray-700">정답</label>
+                                
+                                <button type="button" class="ml-auto text-red-600 hover:text-red-800 remove-choice">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <input type="text" name="choice_text_2" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   placeholder="선택지 내용">
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <button type="button" id="addChoice" class="mt-2 inline-flex items-center text-blue-600 hover:text-blue-800">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    선택지 추가하기
+                </button>
+            </div>
+            
+            <div class="flex justify-between pt-4">
+                <a href="{% if question.id %}{% url 'quizzes:quiz-detail' question.quiz.id %}{% elif quiz_id %}{% url 'quizzes:quiz-detail' quiz_id %}{% else %}{% url 'quizzes:quiz-list' %}{% endif %}" 
+                   class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50">
+                    취소
+                </a>
+                
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500">
+                    {% if question.id %}변경사항 저장{% else %}문제 생성{% endif %}
+                </button>
+            </div>
+        </form>
+        
+        {% if question.id %}
+            <div class="mt-10 pt-6 border-t border-gray-200">
+                <h2 class="text-xl font-bold mb-4 text-red-600">위험 구역</h2>
+                <p class="text-gray-700 mb-4">
+                    이 문제를 삭제하면 연관된 모든 선택지와 답변 데이터가 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+                </p>
+                <form method="post" action="{% url 'quizzes:question-delete' question.id %}" 
+                      onsubmit="return confirm('정말 이 문제를 삭제하시겠습니까?');">
+                    {% csrf_token %}
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                        문제 삭제
+                    </button>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 선택지 항목 수 관리
+    let choiceCount = document.querySelectorAll('.choice-item').length;
+    
+    // 선택지 추가 버튼 이벤트
+    document.getElementById('addChoice').addEventListener('click', function() {
+        choiceCount++;
+        
+        const choicesContainer = document.getElementById('choicesContainer');
+        const newChoice = document.createElement('div');
+        newChoice.className = 'choice-item bg-gray-50 p-3 rounded mb-3';
+        newChoice.innerHTML = `
+            <div class="flex items-center mb-2">
+                <input type="checkbox" name="is_correct_${choiceCount}" id="is_correct_${choiceCount}" 
+                       class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-2">
+                <label for="is_correct_${choiceCount}" class="text-gray-700">정답</label>
+                
+                <button type="button" class="ml-auto text-red-600 hover:text-red-800 remove-choice">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                </button>
+            </div>
+            <input type="text" name="choice_text_${choiceCount}" required
+                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="선택지 내용">
+        `;
+        
+        choicesContainer.appendChild(newChoice);
+        
+        // 새 선택지의 삭제 버튼에 이벤트 연결
+        newChoice.querySelector('.remove-choice').addEventListener('click', function() {
+            if (document.querySelectorAll('.choice-item').length > 2) {
+                this.closest('.choice-item').remove();
+                reorderChoices();
+            } else {
+                alert('최소 2개의 선택지가 필요합니다.');
+            }
+        });
+    });
+    
+    // 이미 있는 선택지 삭제 버튼에 이벤트 연결
+    document.querySelectorAll('.remove-choice').forEach(button => {
+        button.addEventListener('click', function() {
+            if (document.querySelectorAll('.choice-item').length > 2) {
+                this.closest('.choice-item').remove();
+                reorderChoices();
+            } else {
+                alert('최소 2개의 선택지가 필요합니다.');
+            }
+        });
+    });
+    
+    // 선택지 순서 재정렬
+    function reorderChoices() {
+        const choiceItems = document.querySelectorAll('.choice-item');
+        choiceItems.forEach((item, index) => {
+            const newIndex = index + 1;
+            
+            // 체크박스 업데이트
+            const checkbox = item.querySelector('input[type="checkbox"]');
+            checkbox.name = `is_correct_${newIndex}`;
+            checkbox.id = `is_correct_${newIndex}`;
+            
+            // 라벨 업데이트
+            const label = item.querySelector('label');
+            label.setAttribute('for', `is_correct_${newIndex}`);
+            
+            // 텍스트 필드 업데이트
+            const textInput = item.querySelector('input[type="text"]');
+            textInput.name = `choice_text_${newIndex}`;
+        });
+        
+        // 총 선택지 수 업데이트
+        choiceCount = choiceItems.length;
+    }
+    
+    // 폼 제출 전 검증
+    document.getElementById('questionForm').addEventListener('submit', function(e) {
+        // 체크된 정답이 있는지 확인
+        const hasCorrectAnswer = Array.from(document.querySelectorAll('input[type="checkbox"]')).some(checkbox => checkbox.checked);
+        
+        if (!hasCorrectAnswer) {
+            e.preventDefault();
+            alert('최소 하나 이상의 정답을 표시해주세요.');
+            return false;
+        }
+        
+        // 선택지 텍스트가 모두 채워져 있는지 확인
+        const allChoicesFilled = Array.from(document.querySelectorAll('.choice-item input[type="text"]')).every(input => input.value.trim() !== '');
+        
+        if (!allChoicesFilled) {
+            e.preventDefault();
+            alert('모든 선택지 내용을 입력해주세요.');
+            return false;
+        }
+    });
+</script>
+{% endblock %}
