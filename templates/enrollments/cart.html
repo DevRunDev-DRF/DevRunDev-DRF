@@ -22,9 +22,11 @@
                         </div>
                         <div class="text-right">
                             <p class="font-bold text-lg">{{ item.course.price|floatformat:0 }}원</p>
-                            <button hx-delete="{% url 'enrollments:cartitem-detail' item.id %}"
-                                    hx-target="closest div"
+                            <button hx-delete="/api/cart/{{ item.id }}/"
+                                    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                                    hx-target="closest div.p-4"
                                     hx-swap="outerHTML"
+                                    hx-trigger-after-swap="updateCartCount"
                                     class="text-red-500 hover:text-red-700 mt-1">
                                 삭제
                             </button>
@@ -40,8 +42,10 @@
         </div>
 
         <div class="mt-6 text-right">
-            <button hx-post="{% url 'enrollments:cartitem-checkout' %}"
-                    hx-target="body"
+            <button hx-post="/api/cart/checkout/"
+                    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                    hx-target="#main-content"
+                    hx-swap="innerHTML"
                     class="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-500 transition-colors">
                 결제하기
             </button>

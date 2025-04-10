@@ -244,10 +244,32 @@ class CartItemViewSet(viewsets.ModelViewSet):
             )
 
         request.data.update({"user": request.user.id})
-        return super().create(request, *args, **kwargs)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        # 장바구니 개수 반환
+        cart_count = CartItem.objects.filter(user=request.user).count()
+        return Response(str(cart_count), status=status.HTTP_201_CREATED)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+
+        # HTMX 요청인 경우 장바구니 아이템 카운트 갱신
+        if request.headers.get("HX-Request"):
+            cart_count = CartItem.objects.filter(user=request.user).count()
+            headers = {
+                "HX-Trigger-After-Swap": '{"updateCartCount": "'
+                + str(cart_count)
+                + '"}'
+            }
+            return Response(status=status.HTTP_204_NO_CONTENT, headers=headers)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=["post"])
     def checkout(self, request):
@@ -274,6 +296,14 @@ class CartItemViewSet(viewsets.ModelViewSet):
 
         cart_items.delete()
 
+        # HTMX 요청일 경우 템플릿 응답
+        if "HX-Request" in request.headers:
+            return render(
+                request,
+                "enrollments/checkout_success.html",
+                {"enrollments": enrollments},
+            )
+
         return Response(
             {
                 "detail": f"{len(enrollments)}개 강의의 수강신청이 완료되었습니다.",
@@ -282,17 +312,12 @@ class CartItemViewSet(viewsets.ModelViewSet):
         )
 
 
-def get_cart_count(user):
-    """인증된 사용자의 장바구니 아이템 수를 반환"""
-    if user.is_authenticated:
-        return user.cart_items.count()
-    return 0
-
-
 @login_required
 def cart_view(request):
     """장바구니 페이지 뷰"""
-    cart_items = request.user.cart_items.select_related("course")
+    cart_items = CartItem.objects.filter(user=request.user).select_related(
+        "course", "course__instructor"
+    )
 
     # 장바구니 총액 계산
     total_price = sum(item.course.price for item in cart_items)
