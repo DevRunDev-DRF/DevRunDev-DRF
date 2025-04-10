@@ -260,7 +260,26 @@ class CourseDetailView(DetailView):
         if user.is_authenticated and (
             context.get("is_enrolled") or user == course.instructor
         ):
-            context["quizzes"] = Quiz.objects.filter(course=course)
+            quizzes = Quiz.objects.filter(course=course)
+
+            # 각 퀴즈에 대해 사용자의 퀴즈 시도 여부를 확인
+            if user != course.instructor:
+                # 강사가 아닌 경우에만 시도 여부 확인
+                quiz_attempts = QuizAttempt.objects.filter(
+                    quiz__course=course, student=user
+                ).values_list("quiz_id", flat=True)
+
+                # 퀴즈 ID를 키로 하고 시도 여부를 값으로 하는 사전 생성
+                context["quiz_attempts"] = {quiz_id: True for quiz_id in quiz_attempts}
+
+            context["quizzes"] = quizzes
+
+        # 별점 분포 계산
+        rating_counts = {}
+        for rating in range(1, 6):
+            rating_counts[rating] = course.reviews.filter(rating=rating).count()
+
+        context["rating_counts"] = rating_counts
 
         return context
 
