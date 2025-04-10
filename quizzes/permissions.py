@@ -25,8 +25,20 @@ class IsQuizInstructor(permissions.BasePermission):
         # 읽기 요청은 항상 허용
         if request.method in permissions.SAFE_METHODS:
             return True
-        # 작성자만 수정, 삭제 가능
-        return obj.instructor == request.user
+
+        # 객체 타입에 따라 instructor 확인 방법 분기
+        # Question 객체인 경우
+        if hasattr(obj, "quiz"):
+            return obj.quiz.instructor == request.user
+        # Quiz 객체인 경우
+        elif hasattr(obj, "instructor"):
+            return obj.instructor == request.user
+        # 기타 객체 (Choice 등)
+        elif hasattr(obj, "question") and hasattr(obj.question, "quiz"):
+            return obj.question.quiz.instructor == request.user
+
+        # 객체 타입을 확인할 수 없는 경우 기본적으로 거부
+        return False
 
 
 class IsEnrolledOrInstructor(permissions.BasePermission):

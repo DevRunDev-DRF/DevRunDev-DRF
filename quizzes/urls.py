@@ -18,17 +18,16 @@ from .views import (
     QuestionDeleteView,
 )
 
-router = DefaultRouter()
-router.register(r"quizzes", QuizViewSet)
-router.register(r"questions", QuestionViewSet)
-router.register(r"attempts", QuizAttemptViewSet)
-
 app_name = "quizzes"
 
+# API를 위한 라우터
+router = DefaultRouter()
+router.register(r"api/quizzes", QuizViewSet, basename="quiz")
+router.register(r"api/questions", QuestionViewSet, basename="question")
+router.register(r"api/attempts", QuizAttemptViewSet, basename="quizattempt")
+
 urlpatterns = [
-    # REST API 엔드포인트
-    path("api/", include(router.urls)),
-    # 웹 페이지 URL
+    # 템플릿 기반 URL
     path("quiz/", QuizListView.as_view(), name="quiz-list"),
     path("quiz/create/", QuizCreateView.as_view(), name="quiz-create"),
     path("quiz/<int:pk>/", QuizDetailView.as_view(), name="quiz-detail"),
@@ -44,4 +43,17 @@ urlpatterns = [
         QuestionDeleteView.as_view(),
         name="question-delete",
     ),
+    # API 액션 URL
+    path(
+        "api/quiz/<int:pk>/start-attempt/",
+        QuizViewSet.as_view({"post": "start_attempt"}),
+        name="quiz-start-attempt",
+    ),
+    path(
+        "api/quiz/<int:pk>/submit-attempt/",
+        QuizViewSet.as_view({"post": "submit_attempt"}),
+        name="quiz-submit-attempt",
+    ),
+    # 라우터 URL 포함
+    path("", include(router.urls)),
 ]
