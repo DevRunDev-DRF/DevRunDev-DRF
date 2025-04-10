@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
+from django.contrib import messages
 
 from .models import Enrollment, LessonProgress, Certificate, CartItem
 from .serializers import (
@@ -231,24 +232,42 @@ class CartItemViewSet(viewsets.ModelViewSet):
         course_id = request.data.get("course")
         course = get_object_or_404(Course, id=course_id)
 
+        # HTML 폼 제출인지 확인 (Content-Type 확인)
+        is_html_request = (
+            request.accepted_renderer.format == "html"
+            or request.content_type == "application/x-www-form-urlencoded"
+        )
+
         if Enrollment.objects.filter(student=request.user, course=course).exists():
+            if is_html_request:
+                messages.error(request, "이미 수강 중인 강의입니다.")
+                return redirect("enrollments:cart-view")
             return Response(
                 {"detail": "이미 수강 중인 강의입니다."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         if CartItem.objects.filter(user=request.user, course=course).exists():
+            if is_html_request:
+                # 이미 장바구니에 있으면 장바구니 페이지로 이동
+                return redirect("enrollments:cart-view")
             return Response(
                 {"detail": "이미 장바구니에 추가된 강의입니다."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        request.data.update({"user": request.user.id})
-        serializer = self.get_serializer(data=request.data)
+        # 장바구니에 추가
+        # request.data를 직접 수정하지 않고 새 데이터 사전 생성
+        data = {"course": course_id, "user": request.user.id}
+        serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
 
-        # 장바구니 개수 반환
+        # HTML 요청인 경우 장바구니 페이지로 리다이렉트
+        if is_html_request:
+            return redirect("enrollments:cart-view")
+
+        # API 요청인 경우 장바구니 개수 반환 (기존과 동일)
         cart_count = CartItem.objects.filter(user=request.user).count()
         return Response(str(cart_count), status=status.HTTP_201_CREATED)
 

@@ -30,15 +30,13 @@
                 {% if course in enrolled_courses %}
                     <a href="{% url 'courses:course-detail' course.id %}" class="px-3 py-1 bg-green-100 text-green-700 rounded">수강 중</a>
                 {% else %}
-                    <button 
-                        hx-post="/api/cart/" 
-                        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-                        hx-vals='{"course": {{ course.id }}}'
-                        hx-target="#cart-count"
-                        hx-swap="innerHTML"
-                        class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-500">
-                        장바구니
-                    </button>
+                    <form method="post" action="{% url 'enrollments:cartitem-list' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="course" value="{{ course.id }}">
+                        <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-500">
+                            장바구니
+                        </button>
+                    </form>
                 {% endif %}
             {% endif %}
         </div>
