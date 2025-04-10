@@ -1,4 +1,3 @@
-# enrollments/urls.py
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
@@ -21,6 +20,7 @@ app_name = "enrollments"
 
 urlpatterns = [
     path("", include(router.urls)),
-    path("cart/", cart_view, name="cart"),
+    # 템플릿 뷰 경로 추가/수정
+    path("cart-view/", cart_view, name="cart-view"),  # 새 템플릿 뷰 경로
     path("my-courses/", my_courses_view, name="my_courses"),
 ]
