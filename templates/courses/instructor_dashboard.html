@@ -1,125 +1,319 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}강사 대시보드 - DevRunDev{% endblock %}
 
+{% block extra_css %}
+<!-- Chart.js 추가 -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  .stat-card {
+    transition: all 0.3s ease;
+  }
+  .stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  }
+  .nav-tab {
+    position: relative;
+  }
+  .nav-tab.active:after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #1d4ed8;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="max-w-6xl mx-auto">
-    <h1 class="text-2xl font-bold mb-6">강사 대시보드</h1>
-    
-    <!-- 통계 카드 -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white p-6 rounded-lg shadow-md">
-            <h2 class="text-lg font-bold text-gray-700 mb-2">내 강의</h2>
-            <p class="text-3xl font-bold text-blue-600">{{ courses_count }}</p>
-        </div>
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">강사 대시보드</h1>
         
-        <div class="bg-white p-6 rounded-lg shadow-md">
-            <h2 class="text-lg font-bold text-gray-700 mb-2">총 학생 수</h2>
-            <p class="text-3xl font-bold text-blue-600">{{ total_students }}</p>
-        </div>
-        
-        <div class="bg-white p-6 rounded-lg shadow-md">
-            <h2 class="text-lg font-bold text-gray-700 mb-2">평균 평점</h2>
-            <p class="text-3xl font-bold text-blue-600">{{ avg_rating|floatformat:1 }}</p>
-        </div>
-        
-        <div class="bg-white p-6 rounded-lg shadow-md">
-            <h2 class="text-lg font-bold text-gray-700 mb-2">총 리뷰 수</h2>
-            <p class="text-3xl font-bold text-blue-600">{{ total_reviews }}</p>
-        </div>
-    </div>
-    
-    <!-- 내 강의 목록 탭 -->
-    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-bold">내 강의 관리</h2>
-            
+        <div class="flex space-x-3">
             <a href="{% url 'courses:course-create' %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors">
                 새 강의 만들기
             </a>
+            <a href="{% url 'quizzes:quiz-create' %}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-500 transition-colors">
+                새 퀴즈 만들기
+            </a>
         </div>
-        
-        <!-- 탭 메뉴 -->
-        <div class="border-b border-gray-200 mb-6">
-            <div class="flex space-x-6">
-                <a href="?status=all" 
-                   class="py-2 border-b-2 {% if not request.GET.status or request.GET.status == 'all' %}border-blue-600 text-blue-600{% else %}border-transparent{% endif %}">
-                    전체 ({{ courses_count }})
-                </a>
-                <a href="?status=approved" 
-                   class="py-2 border-b-2 {% if request.GET.status == 'approved' %}border-blue-600 text-blue-600{% else %}border-transparent{% endif %}">
-                    승인됨 ({{ approved_count }})
-                </a>
-                <a href="?status=review" 
-                   class="py-2 border-b-2 {% if request.GET.status == 'review' %}border-blue-600 text-blue-600{% else %}border-transparent{% endif %}">
-                    심사 중 ({{ review_count }})
-                </a>
-                <a href="?status=not_approved" 
-                   class="py-2 border-b-2 {% if request.GET.status == 'not_approved' %}border-blue-600 text-blue-600{% else %}border-transparent{% endif %}">
-                    수정 필요 ({{ not_approved_count }})
-                </a>
+    </div>
+    
+    <!-- 통계 카드 -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-lg shadow-md stat-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-700 mb-2">내 강의</h2>
+                    <p class="text-3xl font-bold text-blue-600">{{ courses_count }}</p>
+                </div>
+                <div class="w-12 h-12 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                </div>
+            </div>
+            <div class="flex items-center mt-4 text-sm">
+                <span class="text-green-600 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                    </svg>
+                    {{ approved_count }} 승인됨
+                </span>
+                <span class="text-yellow-600 flex items-center ml-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {{ review_count }} 심사 중
+                </span>
             </div>
         </div>
         
-        <!-- 강의 목록 테이블 -->
-        {% if courses %}
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                강의명
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                상태
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                수강생
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                평점
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                생성일
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                관리
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        {% for course in courses %}
+        <div class="bg-white p-6 rounded-lg shadow-md stat-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-700 mb-2">총 학생 수</h2>
+                    <p class="text-3xl font-bold text-blue-600">{{ total_students }}</p>
+                </div>
+                <div class="w-12 h-12 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="flex items-center mt-4 text-sm">
+                <span class="text-green-600 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                    </svg>
+                    이번 달 신규 5명
+                </span>
+            </div>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-md stat-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-700 mb-2">평균 평점</h2>
+                    <p class="text-3xl font-bold text-blue-600">{{ avg_rating|floatformat:1 }}</p>
+                </div>
+                <div class="w-12 h-12 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="flex items-center mt-4 text-sm">
+                <span class="flex items-center">
+                    <span class="text-yellow-500">★★★★★</span>
+                    <span class="ml-1">{{ total_reviews }} 리뷰</span>
+                </span>
+            </div>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-md stat-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-700 mb-2">총 수익</h2>
+                    <p class="text-3xl font-bold text-blue-600">₩ 1,250,000</p>
+                </div>
+                <div class="w-12 h-12 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="flex items-center mt-4 text-sm">
+                <span class="text-green-600 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                    </svg>
+                    이번 달 ₩250,000
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 차트 섹션 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-lg font-bold mb-4">월별 수강생 통계</h2>
+            <canvas id="studentsChart" height="250"></canvas>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-lg font-bold mb-4">강의별 완료율</h2>
+            <canvas id="completionChart" height="250"></canvas>
+        </div>
+    </div>
+    
+    <!-- 탭 네비게이션 -->
+    <div class="border-b border-gray-200 mb-6">
+        <div class="flex space-x-8">
+            <a href="?tab=courses" class="py-4 nav-tab {% if not request.GET.tab or request.GET.tab == 'courses' %}active font-medium text-blue-600{% endif %}">
+                내 강의
+            </a>
+            <a href="?tab=students" class="py-4 nav-tab {% if request.GET.tab == 'students' %}active font-medium text-blue-600{% endif %}">
+                학생 관리
+            </a>
+            <a href="?tab=reviews" class="py-4 nav-tab {% if request.GET.tab == 'reviews' %}active font-medium text-blue-600{% endif %}">
+                리뷰 관리
+            </a>
+            <a href="?tab=earnings" class="py-4 nav-tab {% if request.GET.tab == 'earnings' %}active font-medium text-blue-600{% endif %}">
+                수익 분석
+            </a>
+        </div>
+    </div>
+    
+    <!-- 탭 컨텐츠 -->
+    {% if not request.GET.tab or request.GET.tab == 'courses' %}
+        <!-- 내 강의 탭 -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="p-4 flex justify-between items-center border-b border-gray-200">
+                <h2 class="text-lg font-bold">내 강의 관리</h2>
+                
+                <div class="flex items-center space-x-2">
+                    <select id="statusFilter" class="border border-gray-300 rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">모든 상태</option>
+                        <option value="review" {% if request.GET.status == 'review' %}selected{% endif %}>심사 중</option>
+                        <option value="approved" {% if request.GET.status == 'approved' %}selected{% endif %}>승인됨</option>
+                        <option value="not_approved" {% if request.GET.status == 'not_approved' %}selected{% endif %}>수정 필요</option>
+                    </select>
+                    
+                    <select id="sortBy" class="border border-gray-300 rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="-created_at">최신순</option>
+                        <option value="title">제목순</option>
+                        <option value="-avg_rating">평점순</option>
+                        <option value="-enrollments">수강생순</option>
+                    </select>
+                    
+                    <button id="applyFilters" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-500">
+                        적용
+                    </button>
+                </div>
+            </div>
+            
+            {% if courses %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
                             <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10">
-                                            <img class="h-10 w-10 rounded-full object-cover" 
-                                                 src="{{ course.thumbnail.url|default:'/static/images/default.jpg' }}" 
-                                                 alt="{{ course.title }}">
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    강의명
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    상태
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    수강생
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    평점
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    생성일
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    관리
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for course in courses %}
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-10 w-10">
+                                                <img class="h-10 w-10 rounded-full object-cover" 
+                                                     src="{{ course.thumbnail.url|default:'/static/images/default.jpg' }}" 
+                                                     alt="{{ course.title }}">
+                                            </div>
+                                            <div class="ml-4">
+                                                <a href="{% url 'courses:course-detail' course.id %}" class="text-blue-600 hover:underline">
+                                                    {{ course.title }}
+                                                </a>
+                                            </div>
                                         </div>
-                                        <div class="ml-4">
-                                            <a href="{% url 'courses:course-detail' course.id %}" class="text-blue-600 hover:underline">
-                                                {{ course.title }}
-                                            </a>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                                     {% if course.status == 'approved' %}bg-green-100 text-green-800
+                                                     {% elif course.status == 'review' %}bg-yellow-100 text-yellow-800
+                                                     {% else %}bg-red-100 text-red-800{% endif %}">
+                                            {{ course.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ course.enrollments.count }}명
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <div class="flex items-center">
+                                            <div class="flex mr-1">
+                                                {% for i in "12345" %}
+                                                    {% if forloop.counter <= course.avg_rating|floatformat:"0" %}
+                                                        <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                        </svg>
+                                                    {% else %}
+                                                        <svg class="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                        </svg>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                            <span>{{ course.avg_rating|floatformat:1 }} ({{ course.reviews.count }})</span>
                                         </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                                 {% if course.status == 'approved' %}bg-green-100 text-green-800
-                                                 {% elif course.status == 'review' %}bg-yellow-100 text-yellow-800
-                                                 {% else %}bg-red-100 text-red-800{% endif %}">
-                                        {{ course.get_status_display }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {{ course.enrollments.count }}명
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <div class="flex items-center">
-                                        <div class="flex mr-1">
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ course.created_at|date:"Y년 m월 d일" }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                        <a href="{% url 'courses:course-edit' course.id %}" class="text-blue-600 hover:underline mr-3">
+                                            수정
+                                        </a>
+                                        <a href="{% url 'courses:course-detail' course.id %}" class="text-gray-600 hover:underline">
+                                            보기
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-8">
+                    <p class="text-gray-500 mb-4">아직 등록한 강의가 없습니다.</p>
+                    <a href="{% url 'courses:course-create' %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors">
+                        첫 강의 만들기
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    {% elif request.GET.tab == 'reviews' %}
+        <!-- 리뷰 관리 탭 -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-bold mb-6">리뷰 관리</h2>
+            
+            {% if recent_reviews %}
+                <div class="space-y-6">
+                    {% for review in recent_reviews %}
+                        <div class="border-b border-gray-200 pb-6 {% if not forloop.last %}mb-6{% endif %}">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold text-blue-600 hover:underline">
+                                        <a href="{% url 'courses:course-detail' review.course.id %}">
+                                            {{ review.course.title }}
+                                        </a>
+                                    </h3>
+                                    <div class="flex items-center mb-2 mt-1">
+                                        <div class="flex mr-2">
                                             {% for i in "12345" %}
-                                                {% if forloop.counter <= course.avg_rating|floatformat:"0" %}
+                                                {% if forloop.counter <= review.rating %}
                                                     <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
                                                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
                                                     </svg>
@@ -130,124 +324,437 @@
                                                 {% endif %}
                                             {% endfor %}
                                         </div>
-                                        <span>{{ course.avg_rating|floatformat:1 }} ({{ course.reviews.count }})</span>
+                                        <span class="text-sm text-gray-600">{{ review.user.username }}</span>
                                     </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {{ course.created_at|date:"Y년 m월 d일" }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                    <a href="{% url 'courses:course-edit' course.id %}" class="text-blue-600 hover:underline mr-3">
-                                        수정
-                                    </a>
-                                    <a href="{% url 'courses:course-detail' course.id %}" class="text-gray-600 hover:underline">
-                                        보기
-                                    </a>
-                                </td>
-                            </tr>
-                        {% endfor %}
+                                    <p class="text-gray-700">{{ review.comment }}</p>
+                                </div>
+                                
+                                <div class="text-xs text-gray-500">
+                                    {{ review.created_at|date:"Y년 m월 d일" }}
+                                    <div class="mt-1">
+                                        <button class="text-blue-600 hover:underline">
+                                            답변
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="mt-4 flex justify-center">
+                    <a href="#" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500 transition-colors">
+                        모든 리뷰 보기
+                    </a>
+                </div>
+            {% else %}
+                <p class="text-gray-500 text-center py-6">아직 리뷰가 없습니다.</p>
+            {% endif %}
+        </div>
+    {% elif request.GET.tab == 'students' %}
+        <!-- 학생 관리 탭 -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-bold mb-6">학생 관리</h2>
+            
+            <div class="mb-6">
+                <input type="text" placeholder="이름 또는 이메일로 학생 검색" 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                학생
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                수강 중인 강의
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                진행률
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                최근 활동
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                액션
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <!-- 샘플 학생 데이터 -->
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                        <span class="text-gray-500 font-medium">홍</span>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">홍길동</div>
+                                        <div class="text-sm text-gray-500">student1@example.com</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">2개 강의</div>
+                                <div class="text-xs text-gray-500">파이썬 프로그래밍 기초, HTML/CSS 웹개발</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div class="bg-blue-600 h-2.5 rounded-full" style="width: 75%"></div>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">75% 완료</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                오늘 10:23
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button class="text-blue-600 hover:text-blue-900 mr-2">메시지</button>
+                                <button class="text-gray-600 hover:text-gray-900">자세히</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                        <span class="text-gray-500 font-medium">김</span>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">김철수</div>
+                                        <div class="text-sm text-gray-500">student2@example.com</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">1개 강의</div>
+                                <div class="text-xs text-gray-500">실전 JavaScript 프로그래밍</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div class="bg-blue-600 h-2.5 rounded-full" style="width: 45%"></div>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">45% 완료</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                어제 16:45
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button class="text-blue-600 hover:text-blue-900 mr-2">메시지</button>
+                                <button class="text-gray-600 hover:text-gray-900">자세히</button>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
+        </div>
+    {% elif request.GET.tab == 'earnings' %}
+        <!-- 수익 분석 탭 -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-bold mb-6">수익 분석</h2>
             
-            <!-- 페이지네이션 -->
-            {% if is_paginated %}
-            <div class="mt-6 flex justify-center">
-                <div class="flex space-x-1">
-                    {% if page_obj.has_previous %}
-                        <a href="?{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}page=1" 
-                           class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
-                            &laquo; 처음
-                        </a>
-                        <a href="?{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}page={{ page_obj.previous_page_number }}" 
-                           class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
-                            이전
-                        </a>
-                    {% endif %}
-                    
-                    {% for num in page_obj.paginator.page_range %}
-                        {% if page_obj.number == num %}
-                            <span class="px-3 py-2 bg-blue-600 text-white rounded">{{ num }}</span>
-                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                            <a href="?{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}page={{ num }}" 
-                               class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
-                                {{ num }}
-                            </a>
-                        {% endif %}
-                    {% endfor %}
-                    
-                    {% if page_obj.has_next %}
-                        <a href="?{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}page={{ page_obj.next_page_number }}" 
-                           class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
-                            다음
-                        </a>
-                        <a href="?{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}page={{ page_obj.paginator.num_pages }}" 
-                           class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
-                            마지막 &raquo;
-                        </a>
-                    {% endif %}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="p-4 border border-gray-200 rounded-lg">
+                    <h3 class="text-sm text-gray-500 mb-1">이번 달 수익</h3>
+                    <p class="text-2xl font-bold">₩ 250,000</p>
+                    <p class="text-xs text-green-600 mt-1">지난 달 대비 15% ↑</p>
+                </div>
+                <div class="p-4 border border-gray-200 rounded-lg">
+                    <h3 class="text-sm text-gray-500 mb-1">올해 총 수익</h3>
+                    <p class="text-2xl font-bold">₩ 1,250,000</p>
+                    <p class="text-xs text-green-600 mt-1">작년 대비 45% ↑</p>
+                </div>
+                <div class="p-4 border border-gray-200 rounded-lg">
+                    <h3 class="text-sm text-gray-500 mb-1">다음 정산 예정</h3>
+                    <p class="text-2xl font-bold">₩ 125,000</p>
+                    <p class="text-xs text-gray-500 mt-1">2025년 5월 15일</p>
                 </div>
             </div>
-            {% endif %}
-        {% else %}
-            <div class="text-center py-8">
-                <p class="text-gray-500 mb-4">아직 등록한 강의가 없습니다.</p>
-                <a href="{% url 'courses:course-create' %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors">
-                    첫 강의 만들기
-                </a>
-            </div>
-        {% endif %}
-    </div>
-    
-    <!-- 최근 리뷰 섹션 -->
-    <div class="bg-white rounded-lg shadow-md p-6">
-        <h2 class="text-xl font-bold mb-6">최근 리뷰</h2>
-        
-        {% if recent_reviews %}
-            <div class="space-y-6">
-                {% for review in recent_reviews %}
-                    <div class="border-b border-gray-200 pb-6 {% if not forloop.last %}mb-6{% endif %}">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h3 class="font-bold text-blue-600 hover:underline">
-                                    <a href="{% url 'courses:course-detail' review.course.id %}">
-                                        {{ review.course.title }}
-                                    </a>
-                                </h3>
-                                <div class="flex items-center mb-2 mt-1">
-                                    <div class="flex mr-2">
-                                        {% for i in "12345" %}
-                                            {% if forloop.counter <= review.rating %}
-                                                <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                                                </svg>
-                                            {% else %}
-                                                <svg class="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                                                </svg>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </div>
-                                    <span class="text-sm text-gray-600">{{ review.user.username }}</span>
-                                </div>
-                                <p class="text-gray-700">{{ review.comment }}</p>
-                            </div>
-                            <div class="text-xs text-gray-500">
-                                {{ review.created_at|date:"Y년 m월 d일" }}
-                            </div>
-                        </div>
-                    </div>
-                {% endfor %}
+            
+            <div class="mb-6">
+                <h3 class="text-lg font-medium mb-2">월별 수익 트렌드</h3>
+                <canvas id="earningsChart" height="250"></canvas>
             </div>
             
-            <div class="mt-4 text-right">
-                <a href="{% url 'courses:instructor-reviews' %}" class="text-blue-600 hover:underline">
-                    모든 리뷰 보기
-                </a>
+            <div class="mb-6">
+                <h3 class="text-lg font-medium mb-2">강의별 수익</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    강의명
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    가격
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    수강생 수
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    총 수익
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    최근 수익
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <!-- 샘플 강의 수익 데이터 -->
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <a href="#" class="text-blue-600 hover:underline">파이썬 프로그래밍 기초</a>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    ₩ 49,900
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    12명
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    ₩ 598,800
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    ₩ 149,700 (이번 달)
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <a href="#" class="text-blue-600 hover:underline">HTML과 CSS로 시작하는 웹개발</a>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    ₩ 39,900
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    8명
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    ₩ 319,200
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    ₩ 79,800 (이번 달)
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <a href="#" class="text-blue-600 hover:underline">실전 JavaScript 프로그래밍</a>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    ₩ 59,900
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    5명
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    ₩ 299,500
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    ₩ 59,900 (이번 달)
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        {% else %}
-            <p class="text-gray-500 text-center py-6">아직 리뷰가 없습니다.</p>
-        {% endif %}
-    </div>
+        </div>
+    {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 학생 통계 차트
+    document.addEventListener('DOMContentLoaded', function() {
+        // Chart.js가 로드되었는지 확인
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js is not loaded');
+            return;
+        }
+        
+        // 학생 통계 차트
+        const studentsCtx = document.getElementById('studentsChart');
+        if (studentsCtx) {
+            try {
+                // 이미 차트가 있는지 확인
+                if (window.studentsChart) {
+                    window.studentsChart.destroy();
+                }
+                
+                window.studentsChart = new Chart(studentsCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['1월', '2월', '3월', '4월', '5월', '6월'],
+                        datasets: [{
+                            label: '신규 수강생',
+                            data: [5, 8, 12, 7, 15, 10],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.2,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error creating students chart:', error);
+            }
+        }
+    
+        // 완료율 차트
+        const completionCtx = document.getElementById('completionChart');
+        if (completionCtx) {
+            try {
+                // 이미 차트가 있는지 확인
+                if (window.completionChart) {
+                    window.completionChart.destroy();
+                }
+                
+                window.completionChart = new Chart(completionCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['파이썬 기초', 'HTML/CSS 웹개발', 'JavaScript 프로그래밍'],
+                        datasets: [{
+                            label: '완료율',
+                            data: [75, 60, 45],
+                            backgroundColor: ['#3b82f6', '#4ade80', '#f59e0b'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + '%';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error creating completion chart:', error);
+            }
+        }
+        
+        // 수익 차트도 같은 방식으로 수정
+        const earningsCtx = document.getElementById('earningsChart');
+        if (earningsCtx) {
+            try {
+                if (window.earningsChart) {
+                    window.earningsChart.destroy();
+                }
+                
+                window.earningsChart = new Chart(earningsCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['1월', '2월', '3월', '4월', '5월', '6월'],
+                        datasets: [{
+                            label: '월별 수익',
+                            data: [150000, 180000, 210000, 190000, 220000, 250000],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.2,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                        },
+                        scales: {
+                            y: {
+                                ticks: {
+                                    callback: function(value) {
+                                        return '₩ ' + value.toLocaleString();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error creating earnings chart:', error);
+            }
+        }
+    });
+
+    // 수익 차트
+    const earningsCtx = document.getElementById('earningsChart');
+    if (earningsCtx) {
+        new Chart(earningsCtx, {
+            type: 'line',
+            data: {
+                labels: ['1월', '2월', '3월', '4월', '5월', '6월'],
+                datasets: [{
+                    label: '월별 수익',
+                    data: [150000, 180000, 210000, 190000, 220000, 250000],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.2,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                },
+                scales: {
+                    y: {
+                        ticks: {
+                            callback: function(value) {
+                                return '₩ ' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // 필터 적용 버튼
+    const applyFiltersBtn = document.getElementById('applyFilters');
+    if (applyFiltersBtn) {
+        applyFiltersBtn.addEventListener('click', function() {
+            const status = document.getElementById('statusFilter').value;
+            const sortBy = document.getElementById('sortBy').value;
+            let url = window.location.pathname + '?tab=courses';
+            
+            if (status) {
+                url += '&status=' + status;
+            }
+            
+            if (sortBy) {
+                url += '&ordering=' + sortBy;
+            }
+            
+            window.location.href = url;
+        });
+    }
+</script>
 {% endblock %}

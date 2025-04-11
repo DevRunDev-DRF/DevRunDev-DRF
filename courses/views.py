@@ -32,6 +32,7 @@ from .serializers import (
     LessonSerializer,
 )
 from .forms import CourseForm, SectionForm, LessonForm
+from django.db import models
 
 
 # REST API 뷰셋 (기존 코드 유지)
@@ -602,12 +603,17 @@ class InstructorDashboardView(ListView):
             queryset = queryset.filter(status=status)
 
         # 정렬
-        queryset = queryset.order_by("-created_at")
+        ordering = self.request.GET.get("ordering", "-created_at")
+        queryset = queryset.order_by(ordering)
 
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        # 현재 선택된 탭
+        current_tab = self.request.GET.get("tab", "courses")
+        context["current_tab"] = current_tab
 
         # 통계 정보
         instructor_courses = Course.objects.filter(instructor=self.request.user)
@@ -642,10 +648,118 @@ class InstructorDashboardView(ListView):
             course__instructor=self.request.user
         ).order_by("-created_at")[:5]
 
+        # 수익 데이터 계산 (실제로는 결제 모델에서 가져와야 함)
+        # 이 예시에서는 간단히 강의 가격 * 수강생 수로 계산
+        if current_tab == "earnings":
+            context["total_earnings"] = self._calculate_total_earnings()
+            context["monthly_earnings"] = self._calculate_monthly_earnings()
+            context["course_earnings"] = self._calculate_course_earnings()
+
+        # 학생 데이터 (실제로는 Enrollment 모델에서 가져와야 함)
+        if current_tab == "students":
+            context["students"] = self._get_students_data()
+
         # 장바구니 수
         context["cart_count"] = CartItem.objects.filter(user=self.request.user).count()
 
         return context
+
+    def _calculate_total_earnings(self):
+        """총 수익 계산 (예시)"""
+        total = 0
+        for course in Course.objects.filter(
+            instructor=self.request.user, status="approved"
+        ):
+            students_count = Enrollment.objects.filter(course=course).count()
+            total += course.price * students_count
+        return total
+
+    def _calculate_monthly_earnings(self):
+        """월별 수익 계산 (예시)"""
+        # 실제로는 결제 날짜별로 필터링하여 계산해야 함
+        # 여기서는 간단히 총 수익의 20%를 이번달 수익으로 가정
+        return self._calculate_total_earnings() * 0.2
+
+    def _calculate_course_earnings(self):
+        """강의별 수익 계산 (예시)"""
+        earnings = []
+        for course in Course.objects.filter(
+            instructor=self.request.user, status="approved"
+        ):
+            students_count = Enrollment.objects.filter(course=course).count()
+            total_earned = course.price * students_count
+            monthly_earned = (
+                total_earned * 0.2
+            )  # 예시로 총 수익의 20%를 이번달 수익으로 가정
+
+            earnings.append(
+                {
+                    "course": course,
+                    "price": course.price,
+                    "students_count": students_count,
+                    "total_earned": total_earned,
+                    "monthly_earned": monthly_earned,
+                }
+            )
+
+        return earnings
+
+    def _get_students_data(self):
+        """학생 데이터 가져오기 (예시)"""
+        # 실제로는 Enrollment 모델과 LessonProgress 모델을 조인하여 가져와야 함
+        students_data = []
+
+        # 중복 없이 이 강사의 강의를 수강 중인 학생들 가져오기
+        student_ids = (
+            Enrollment.objects.filter(course__instructor=self.request.user)
+            .values_list("student", flat=True)
+            .distinct()
+        )
+
+        for student_id in student_ids:
+            try:
+                student = User.objects.get(id=student_id)
+
+                # 이 학생이 수강 중인 강의 목록
+                enrolled_courses = Course.objects.filter(
+                    instructor=self.request.user, enrollments__student=student
+                )
+
+                # 학생의 평균 진행률 계산
+                enrollments = Enrollment.objects.filter(
+                    student=student, course__instructor=self.request.user
+                )
+
+                avg_progress = (
+                    enrollments.aggregate(avg=models.Avg("progress"))["avg"] or 0
+                )
+
+                # 마지막 활동 시간 (예: 마지막 레슨 시청 시간)
+                last_progress = (
+                    LessonProgress.objects.filter(
+                        student=student,
+                        lesson__section__course__instructor=self.request.user,
+                    )
+                    .order_by("-last_watched_at")
+                    .first()
+                )
+
+                last_activity = last_progress.last_watched_at if last_progress else None
+
+                students_data.append(
+                    {
+                        "student": student,
+                        "enrolled_courses": enrolled_courses,
+                        "courses_count": enrolled_courses.count(),
+                        "avg_progress": avg_progress,
+                        "last_activity": last_activity,
+                    }
+                )
+
+            except User.DoesNotExist:
+                continue
+
+        return students_data
 
 
 class SearchCoursesView(ListView):
