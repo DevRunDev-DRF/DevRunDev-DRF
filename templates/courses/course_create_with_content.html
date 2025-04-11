@@ -1,0 +1,303 @@
+{% extends 'base.html' %}
+
+{% block title %}새 강의 만들기 - DevRunDev{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">새 강의 만들기</h1>
+    
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <form method="post" enctype="multipart/form-data" class="space-y-8" id="courseForm">
+            {% csrf_token %}
+            
+            <!-- 강의 기본 정보 -->
+            <div class="space-y-4">
+                <h2 class="text-xl font-bold border-b pb-2">강의 기본 정보</h2>
+                
+                <div>
+                    <label for="id_title" class="block text-gray-700 font-medium mb-2">강의 제목</label>
+                    <input type="text" name="title" id="id_title" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="강의 제목을 입력하세요">
+                </div>
+                
+                <div>
+                    <label for="id_description" class="block text-gray-700 font-medium mb-2">강의 설명</label>
+                    <textarea name="description" id="id_description" rows="5" required
+                             class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                             placeholder="강의에 대한 자세한 설명을 작성하세요"></textarea>
+                </div>
+                
+                <div>
+                    <label for="id_price" class="block text-gray-700 font-medium mb-2">가격 (원)</label>
+                    <input type="number" name="price" id="id_price" value="0" required min="0"
+                           class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="강의 가격을 입력하세요">
+                    <p class="text-sm text-gray-500 mt-1">무료 강의는 0원으로 설정하세요</p>
+                </div>
+                
+                <div>
+                    <label for="id_thumbnail" class="block text-gray-700 font-medium mb-2">썸네일 이미지</label>
+                    <div id="thumbnail-preview" class="w-full h-40 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mb-2 bg-gray-50">
+                        <span class="text-gray-400">썸네일 미리보기</span>
+                    </div>
+                    <input type="file" name="thumbnail" id="id_thumbnail" accept="image/*"
+                           class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <p class="text-sm text-gray-500 mt-1">권장 크기: 1280x720 픽셀</p>
+                </div>
+            </div>
+            
+            <!-- 섹션 컨테이너 -->
+            <div id="sections-container" class="space-y-6">
+                <div class="flex justify-between items-center border-b pb-2">
+                    <h2 class="text-xl font-bold">섹션</h2>
+                    <button type="button" id="add-section-btn" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-500">
+                        섹션 추가
+                    </button>
+                </div>
+                
+                <!-- 여기에 섹션이 추가됩니다 -->
+                
+                <div class="text-gray-500 text-center py-4 empty-sections-msg">
+                    아직 섹션이 없습니다. '섹션 추가' 버튼을 눌러 강의 섹션을 추가하세요.
+                </div>
+            </div>
+            
+            <div class="flex justify-between pt-4">
+                <a href="{% url 'courses:course-list' %}" class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50">
+                    취소
+                </a>
+                
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500">
+                    강의 생성
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 섹션 템플릿 (JavaScript로 복제해서 사용됨) -->
+<template id="section-template">
+    <div class="section border rounded-lg p-4 bg-gray-50">
+        <div class="flex justify-between items-start mb-4">
+            <div class="w-full">
+                <div class="mb-3">
+                    <label class="block text-gray-700 font-medium mb-2">섹션 제목</label>
+                    <input type="text" name="sections[INDEX].title" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="섹션 제목을 입력하세요">
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2">섹션 순서</label>
+                    <input type="number" name="sections[INDEX].order" value="1" min="1" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <button type="button" class="remove-section-btn ml-2 p-1 text-red-600 hover:text-red-800">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+            </button>
+        </div>
+        
+        <!-- 레슨 컨테이너 -->
+        <div class="lessons-container space-y-4 mt-4">
+            <div class="flex justify-between items-center">
+                <h3 class="font-medium">레슨</h3>
+                <button type="button" class="add-lesson-btn px-2 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-500">
+                    레슨 추가
+                </button>
+            </div>
+            
+            <!-- 여기에 레슨이 추가됩니다 -->
+            
+            <div class="text-gray-500 text-center py-3 empty-lessons-msg">
+                아직 레슨이 없습니다. '레슨 추가' 버튼을 눌러 섹션에 레슨을 추가하세요.
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- 레슨 템플릿 (JavaScript로 복제해서 사용됨) -->
+<template id="lesson-template">
+    <div class="lesson border rounded p-3 bg-white">
+        <div class="flex justify-between items-start">
+            <div class="w-full">
+                <div class="mb-2">
+                    <label class="block text-gray-700 text-sm font-medium mb-1">레슨 제목</label>
+                    <input type="text" name="sections[SECTION_INDEX].lessons[LESSON_INDEX].title" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="레슨 제목을 입력하세요">
+                </div>
+                <div class="mb-2">
+                    <label class="block text-gray-700 text-sm font-medium mb-1">비디오 URL</label>
+                    <input type="url" name="sections[SECTION_INDEX].lessons[LESSON_INDEX].video_url" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="YouTube 비디오 URL">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">레슨 순서</label>
+                    <input type="number" name="sections[SECTION_INDEX].lessons[LESSON_INDEX].order" value="1" min="1" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <button type="button" class="remove-lesson-btn ml-2 p-1 text-red-600 hover:text-red-800">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+            </button>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 썸네일 미리보기
+        const thumbnailInput = document.getElementById('id_thumbnail');
+        const thumbnailPreview = document.getElementById('thumbnail-preview');
+        
+        thumbnailInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    thumbnailPreview.innerHTML = `<img src="${e.target.result}" class="h-full w-auto mx-auto object-contain">`;
+                };
+                reader.readAsDataURL(this.files[0]);
+            } else {
+                thumbnailPreview.innerHTML = `<span class="text-gray-400">썸네일 미리보기</span>`;
+            }
+        });
+        
+        // 섹션 카운터
+        let sectionCounter = 0;
+        
+        // 섹션 추가 버튼
+        const addSectionBtn = document.getElementById('add-section-btn');
+        const sectionsContainer = document.getElementById('sections-container');
+        const sectionTemplate = document.getElementById('section-template');
+        
+        addSectionBtn.addEventListener('click', function() {
+            const sectionIndex = sectionCounter++;
+            
+            // 섹션 템플릿 복제
+            const sectionContent = sectionTemplate.content.cloneNode(true);
+            const sectionElement = sectionContent.querySelector('.section');
+            
+            // 템플릿에서 인덱스 교체
+            replaceTemplateIndex(sectionElement, 'INDEX', sectionIndex);
+            
+            // 섹션 요소 추가
+            sectionsContainer.appendChild(sectionElement);
+            
+            // 빈 섹션 메시지 숨기기
+            const emptyMsg = sectionsContainer.querySelector('.empty-sections-msg');
+            if (emptyMsg) {
+                emptyMsg.style.display = 'none';
+            }
+            
+            // 섹션 삭제 버튼 이벤트
+            const removeBtn = sectionElement.querySelector('.remove-section-btn');
+            removeBtn.addEventListener('click', function() {
+                sectionElement.remove();
+                
+                // 섹션이 없으면 빈 메시지 표시
+                if (sectionsContainer.querySelectorAll('.section').length === 0) {
+                    const emptyMsg = sectionsContainer.querySelector('.empty-sections-msg');
+                    if (emptyMsg) {
+                        emptyMsg.style.display = 'block';
+                    }
+                }
+            });
+            
+            // 레슨 추가 버튼 이벤트
+            const addLessonBtn = sectionElement.querySelector('.add-lesson-btn');
+            const lessonsContainer = sectionElement.querySelector('.lessons-container');
+            const lessonTemplate = document.getElementById('lesson-template');
+            
+            // 레슨 카운터
+            let lessonCounter = 0;
+            
+            addLessonBtn.addEventListener('click', function() {
+                const lessonIndex = lessonCounter++;
+                
+                // 레슨 템플릿 복제
+                const lessonContent = lessonTemplate.content.cloneNode(true);
+                const lessonElement = lessonContent.querySelector('.lesson');
+                
+                // 템플릿에서 인덱스 교체
+                replaceTemplateIndex(lessonElement, 'SECTION_INDEX', sectionIndex);
+                replaceTemplateIndex(lessonElement, 'LESSON_INDEX', lessonIndex);
+                
+                // 레슨 요소 추가
+                lessonsContainer.appendChild(lessonElement);
+                
+                // 빈 레슨 메시지 숨기기
+                const emptyLessonMsg = lessonsContainer.querySelector('.empty-lessons-msg');
+                if (emptyLessonMsg) {
+                    emptyLessonMsg.style.display = 'none';
+                }
+                
+                // 레슨 삭제 버튼 이벤트
+                const removeLessonBtn = lessonElement.querySelector('.remove-lesson-btn');
+                removeLessonBtn.addEventListener('click', function() {
+                    lessonElement.remove();
+                    
+                    // 레슨이 없으면 빈 메시지 표시
+                    if (lessonsContainer.querySelectorAll('.lesson').length === 0) {
+                        const emptyLessonMsg = lessonsContainer.querySelector('.empty-lessons-msg');
+                        if (emptyLessonMsg) {
+                            emptyLessonMsg.style.display = 'block';
+                        }
+                    }
+                });
+            });
+        });
+        
+        // 폼 제출 처리
+        const courseForm = document.getElementById('courseForm');
+        courseForm.addEventListener('submit', function(e) {
+            // 만약 JSON 데이터로 변환하고 API로 제출하려면 여기서 처리
+            // 기본 폼 제출 사용 시에는 아래 코드는 필요 없음
+            
+            // e.preventDefault();
+            // const formData = new FormData(courseForm);
+            // 
+            // fetch('/api/courses/create-with-content/', {
+            //     method: 'POST',
+            //     body: formData,
+            //     headers: {
+            //         'X-CSRFToken': getCookie('csrftoken')
+            //     }
+            // })
+            // .then(response => response.json())
+            // .then(data => {
+            //     window.location.href = `/courses/${data.id}/`;
+            // })
+            // .catch(error => console.error('Error:', error));
+        });
+        
+        // 헬퍼 함수: 템플릿의 인덱스 교체
+        function replaceTemplateIndex(element, placeholder, index) {
+            const inputs = element.querySelectorAll('input, textarea, select');
+            inputs.forEach(input => {
+                if (input.name) {
+                    input.name = input.name.replace(placeholder, index);
+                }
+            });
+            
+            // 중첩된 요소에 대해서도 교체
+            const innerContent = element.innerHTML;
+            element.innerHTML = innerContent.replace(new RegExp(placeholder, 'g'), index);
+        }
+        
+        // CSRF 토큰 가져오기 함수
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+    });
+</script>
+{% endblock %}

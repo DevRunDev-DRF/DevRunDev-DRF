@@ -16,6 +16,7 @@ from .views import (
     LessonDetailView,
     InstructorDashboardView,
     SearchCoursesView,
+    CourseCreateWithContentView,
 )
 
 app_name = "courses"
@@ -47,4 +48,9 @@ urlpatterns = [
         name="instructor-reviews",
     ),
     path("search/", SearchCoursesView.as_view(), name="search"),
+    path(
+        "create-with-content/",
+        CourseCreateWithContentView.as_view(),
+        name="course-create-with-content",
+    ),
 ]

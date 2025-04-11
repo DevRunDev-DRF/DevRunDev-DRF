@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count, Q
 from django.contrib import messages
 from django.views.generic import (
@@ -12,6 +13,7 @@ from django.views.generic import (
     DeleteView,
 )
 from django.views.generic.edit import FormView
+from django.views import View
 
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets, status
@@ -104,6 +106,140 @@ class CourseViewSet(viewsets.ModelViewSet):
             {"detail": f"'{course.title}' 수강 신청이 완료되었습니다."},
             status=status.HTTP_201_CREATED,
         )
+
+    @action(detail=False, methods=["post"])
+    def create_with_content(self, request):
+        """
+        강의, 섹션, 레슨을 한 번에 생성하는 API
+        """
+        serializer = CourseCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # 강사 정보 추가 및 상태 'review'로 설정
+        course = serializer.save(instructor=request.user, status="review")
+
+        return Response(
+            CourseDetailSerializer(course).data, status=status.HTTP_201_CREATED
+        )
+
+
+class CourseCreateWithContentView(LoginRequiredMixin, View):
+    """강의, 섹션, 레슨을 한번에 생성하는 템플릿 뷰"""
+
+    template_name = "courses/course_create_with_content.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        # 강사 권한 확인
+        if not request.user.is_instructor():
+            messages.error(request, "강사만 강의를 생성할 수 있습니다.")
+            return redirect("courses:course-list")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request):
+        """폼 페이지 렌더링"""
+        return render(request, self.template_name)
+
+    def post(self, request):
+        """폼 제출 처리"""
+        try:
+            # 폼 데이터 처리
+            data = self._process_form_data(request)
+
+            # 강의 생성
+            course = self._create_course(data)
+
+            messages.success(
+                request, "강의가 성공적으로 생성되었습니다. 관리자 승인 후 공개됩니다."
+            )
+            return redirect("courses:course-detail", pk=course.id)
+
+        except Exception as e:
+            messages.error(request, f"강의 생성 중 오류가 발생했습니다: {str(e)}")
+            return render(request, self.template_name)
+
+    def _process_form_data(self, request):
+        """폼 데이터를 처리하여 중첩된 데이터 구조로 변환"""
+        data = {
+            "title": request.POST.get("title", ""),
+            "description": request.POST.get("description", ""),
+            "price": request.POST.get("price", 0),
+            "sections": [],
+        }
+
+        # 섹션 및 레슨 데이터 추출
+        section_indices = set()
+        for key in request.POST.keys():
+            if key.startswith("sections[") and "].title" in key:
+                # sections[0].title 형식에서 인덱스 추출
+                index = key.split("]")[0].split("[")[1]
+                section_indices.add(index)
+
+        # 섹션별 데이터 구성
+        for index in section_indices:
+            section = {
+                "title": request.POST.get(f"sections[{index}].title", ""),
+                "order": request.POST.get(f"sections[{index}].order", 1),
+                "lessons": [],
+            }
+
+            # 해당 섹션의 레슨 찾기
+            lesson_indices = set()
+            for key in request.POST.keys():
+                if key.startswith(f"sections[{index}].lessons[") and "].title" in key:
+                    # sections[0].lessons[0].title 형식에서 레슨 인덱스 추출
+                    lesson_index = key.split("]")[1].split("[")[1]
+                    lesson_indices.add(lesson_index)
+
+            # 레슨 데이터 구성
+            for lesson_index in lesson_indices:
+                lesson = {
+                    "title": request.POST.get(
+                        f"sections[{index}].lessons[{lesson_index}].title", ""
+                    ),
+                    "video_url": request.POST.get(
+                        f"sections[{index}].lessons[{lesson_index}].video_url", ""
+                    ),
+                    "order": request.POST.get(
+                        f"sections[{index}].lessons[{lesson_index}].order", 1
+                    ),
+                }
+                section["lessons"].append(lesson)
+
+            data["sections"].append(section)
+
+        return data
+
+    def _create_course(self, data):
+        """강의, 섹션, 레슨 생성"""
+        # 강의 생성
+        course = Course.objects.create(
+            instructor=self.request.user,
+            title=data["title"],
+            description=data["description"],
+            price=data["price"],
+            status="review",
+        )
+
+        # 썸네일 처리
+        if self.request.FILES.get("thumbnail"):
+            course.thumbnail = self.request.FILES["thumbnail"]
+            course.save()
+
+        # 섹션 및 레슨 생성
+        for section_data in data["sections"]:
+            section = Section.objects.create(
+                course=course, title=section_data["title"], order=section_data["order"]
+            )
+
+            for lesson_data in section_data["lessons"]:
+                Lesson.objects.create(
+                    section=section,
+                    title=lesson_data["title"],
+                    video_url=lesson_data["video_url"],
+                    order=lesson_data["order"],
+                )
+
+        return course
 
 
 class SectionViewSet(viewsets.ModelViewSet):
