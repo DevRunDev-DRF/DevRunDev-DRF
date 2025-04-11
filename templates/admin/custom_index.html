@@ -1,0 +1,96 @@
+{% extends "admin/index.html" %}
+{% load i18n static %}
+
+{% block content %}
+<div class="dashboard-header" style="margin-bottom: 20px; padding: 20px; background-color: #f9f9f9; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    <h2 style="color: #2962FF; margin-bottom: 10px;">환영합니다, {{ request.user.username }} 님</h2>
+    <p style="color: #555;">DevRunDev 교육 플랫폼 관리자 페이지입니다.</p>
+</div>
+
+<div class="admin-dashboard" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px;">
+    <!-- 강사 신청 요약 -->
+    <div class="dashboard-card" style="background-color: #e3f2fd; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h3 style="color: #1976D2; font-size: 18px; margin-bottom: 15px;">강사 신청 관리</h3>
+        <ul style="list-style-type: none; padding: 0;">
+            {% with pending_count=available_apps.0.models.0.perms.view|default:0 %}
+            <li style="margin-bottom: 10px;">
+                <a href="/admin/accounts/instructorapplication/?status=PENDING" style="color: #1976D2; text-decoration: none; display: flex; justify-content: space-between;">
+                    <span>대기 중인 신청</span>
+                    <span class="count" style="font-weight: bold;">{{ pending_count }}</span>
+                </a>
+            </li>
+            {% endwith %}
+            <li style="margin-bottom: 10px;">
+                <a href="/admin/accounts/instructorapplication/?status=APPROVED" style="color: #2E7D32; text-decoration: none;">승인된 신청</a>
+            </li>
+            <li>
+                <a href="/admin/accounts/instructorapplication/?status=REJECTED" style="color: #C62828; text-decoration: none;">거부된 신청</a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- 강의 관리 요약 -->
+    <div class="dashboard-card" style="background-color: #e8f5e9; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h3 style="color: #2E7D32; font-size: 18px; margin-bottom: 15px;">강의 관리</h3>
+        <ul style="list-style-type: none; padding: 0;">
+            <li style="margin-bottom: 10px;">
+                <a href="/admin/courses/course/?status=review" style="color: #F57C00; text-decoration: none; display: flex; justify-content: space-between;">
+                    <span>검토 대기 중</span>
+                    <span class="count" style="font-weight: bold;"></span>
+                </a>
+            </li>
+            <li style="margin-bottom: 10px;">
+                <a href="/admin/courses/course/?status=approved" style="color: #2E7D32; text-decoration: none;">승인된 강의</a>
+            </li>
+            <li>
+                <a href="/admin/courses/course/?status=not_approved" style="color: #C62828; text-decoration: none;">거부된 강의</a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- 학생 관리 요약 -->
+    <div class="dashboard-card" style="background-color: #fff8e1; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h3 style="color: #F57C00; font-size: 18px; margin-bottom: 15px;">학생 관리</h3>
+        <ul style="list-style-type: none; padding: 0;">
+            <li style="margin-bottom: 10px;">
+                <a href="/admin/accounts/user/?role=Student" style="color: #1976D2; text-decoration: none; display: flex; justify-content: space-between;">
+                    <span>전체 학생</span>
+                    <span class="count" style="font-weight: bold;"></span>
+                </a>
+            </li>
+            <li style="margin-bottom: 10px;">
+                <a href="/admin/enrollments/enrollment/" style="color: #2E7D32; text-decoration: none;">수강 신청 관리</a>
+            </li>
+            <li>
+                <a href="/admin/enrollments/certificate/" style="color: #7B1FA2; text-decoration: none;">수료증 관리</a>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<!-- 원래 앱 목록 표시 -->
+{{ block.super }}
+
+<!-- 대시보드 스크립트 -->
+<script type="text/javascript">
+document.addEventListener('DOMContentLoaded', function() {
+    // 관리자 페이지 로드 시 데이터 가져오기
+    fetch('/admin/dashboard-data/')
+        .then(response => response.json())
+        .then(data => {
+            // 각 카운트 업데이트
+            const countElements = document.querySelectorAll('.count');
+            if (data.pending_instructor_count) {
+                countElements[0].textContent = data.pending_instructor_count;
+            }
+            if (data.review_course_count) {
+                countElements[1].textContent = data.review_course_count;
+            }
+            if (data.student_count) {
+                countElements[2].textContent = data.student_count;
+            }
+        })
+        .catch(error => console.error('Error loading dashboard data:', error));
+});
+</script>
+{% endblock %}

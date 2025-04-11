@@ -6,6 +6,7 @@ from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from django.conf import settings
 from .views import home_view
+from .admin_views import admin_dashboard_data
 
 # Courses app의 API 뷰셋 가져오기
 from courses.views import CourseViewSet, SectionViewSet, LessonViewSet
@@ -42,6 +43,7 @@ urlpatterns = [
     path("quizzes/", include("quizzes.urls")),
     path("enrollments/", include("enrollments.urls")),
     path("reviews/", include("reviews.urls")),
+    path("admin/dashboard-data/", admin_dashboard_data, name="admin-dashboard-data"),
     # Swagger 문서 URL
     path(
         "swagger<format>/", schema_view.without_ui(cache_timeout=0), name="schema-json"
