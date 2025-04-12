@@ -11,6 +11,20 @@
         <h1 class="text-2xl font-bold mb-4">수강신청이 완료되었습니다!</h1>
         <p class="text-gray-600 mb-6">{{ enrollments|length }}개의 강의에 성공적으로 등록되었습니다.</p>
         
+        <div class="mb-6 max-w-md mx-auto">
+            <div class="bg-gray-50 p-4 rounded text-left">
+                <h2 class="font-medium mb-2">등록된 강의:</h2>
+                <ul class="list-disc list-inside">
+                    {% for enrollment in enrollments %}
+                        <li>{{ enrollment.course.title }}</li>
+                    {% endfor %}
+                </ul>
+                <div class="text-right mt-3 font-bold">
+                    총 결제액: {{ total_price|floatformat:0 }}원
+                </div>
+            </div>
+        </div>
+        
         <div class="flex justify-center space-x-4">
             <a href="{% url 'enrollments:my_courses' %}" 
                class="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-500 transition-colors">

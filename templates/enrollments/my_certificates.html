@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}내 수료증 - DevRunDev{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">내 수료증</h1>
+
+    {% if certificates %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% for certificate in certificates %}
+                <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div class="p-6">
+                        <h2 class="text-xl font-bold mb-2">{{ certificate.enrollment.course.title }}</h2>
+                        <p class="text-gray-600 mb-4">수료증 ID: {{ certificate.certificate_id }}</p>
+                        <p class="text-gray-600 mb-4">발급일: {{ certificate.issued_at|date:"Y년 m월 d일" }}</p>
+                        <a href="{% url 'enrollments:certificate_detail' certificate.certificate_id %}" 
+                           class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors">
+                            수료증 보기
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="bg-white shadow-md rounded-lg p-8 text-center">
+            <p class="text-gray-500 mb-4">아직 발급받은 수료증이 없습니다.</p>
+            <p class="mb-4">강의를 모두 완료하면 자동으로 수료증이 발급됩니다.</p>
+            <a href="{% url 'courses:course-list' %}" 
+               class="inline-block bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-500 transition-colors">
+                강의 찾아보기
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

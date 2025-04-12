@@ -42,6 +42,7 @@
                             
                             {% if user.is_student %}
                                 <a href="{% url 'enrollments:my_courses' %}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">내 강의</a>
+                                <a href="{% url 'enrollments:my_certificates' %}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">내 수료증</a>
                             {% endif %}
                             
                             <a href="#" hx-post="{% url 'accounts:logout' %}" hx-target="body" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">로그아웃</a>

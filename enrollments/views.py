@@ -158,11 +158,23 @@ class LessonProgressViewSet(viewsets.ModelViewSet):
 
         progress.mark_completed()
 
+        # 마지막 시청 레슨 업데이트
         enrollment = Enrollment.objects.get(
             student=request.user, course=lesson.section.course
         )
         enrollment.last_watched_lesson = lesson
         enrollment.save()
+
+        # 모든 레슨 완료 후 수료증 자동 발급
+        if enrollment.is_course_completed() and not hasattr(enrollment, "certificate"):
+            certificate = enrollment.generate_certificate()
+            if certificate:
+                return Response(
+                    {
+                        "detail": "레슨이 완료 처리되었으며, 모든 과정을 완료하여 수료증이 발급되었습니다.",
+                        "certificate_id": certificate.certificate_id,
+                    }
+                )
 
         return Response({"detail": "레슨이 완료 처리되었습니다."})
 
@@ -319,32 +331,53 @@ class CartItemViewSet(viewsets.ModelViewSet):
             )
 
         enrollments = []
-        for item in cart_items:
-            if not Enrollment.objects.filter(
-                student=request.user, course=item.course
-            ).exists():
-                enrollment = Enrollment.objects.create(
-                    student=request.user,
-                    course=item.course,
-                    status="in_progress",
-                    progress=0,
-                )
-                enrollments.append(enrollment)
+        total_price = 0
+        # 트랜잭션으로 처리하여 오류 발생 시 롤백
+        with transaction.atomic():
+            for item in cart_items:
+                # 이미 수강 중인지 확인
+                if not Enrollment.objects.filter(
+                    student=request.user, course=item.course
+                ).exists():
+                    # 수강료 계산
+                    total_price += item.course.price
 
-        cart_items.delete()
+                    # 수강 신청 생성
+                    enrollment = Enrollment.objects.create(
+                        student=request.user,
+                        course=item.course,
+                        status="in_progress",
+                        progress=0,
+                    )
+                    enrollments.append(enrollment)
+
+                    # 강의 첫 레슨 자동으로 가져와서 설정
+                    first_lesson = (
+                        Lesson.objects.filter(section__course=item.course)
+                        .order_by("section__order", "order")
+                        .first()
+                    )
+
+                    if first_lesson:
+                        enrollment.last_watched_lesson = first_lesson
+                        enrollment.save()
+
+            # 장바구니 비우기
+            cart_items.delete()
 
         # HTMX 요청일 경우 템플릿 응답
         if "HX-Request" in request.headers:
             return render(
                 request,
                 "enrollments/checkout_success.html",
-                {"enrollments": enrollments},
+                {"enrollments": enrollments, "total_price": total_price},
             )
 
         return Response(
             {
                 "detail": f"{len(enrollments)}개 강의의 수강신청이 완료되었습니다.",
                 "enrollments": EnrollmentSerializer(enrollments, many=True).data,
+                "total_price": total_price,
             }
         )
 
@@ -391,3 +424,34 @@ def my_courses_view(request):
         "cart_count": request.user.cart_items.count(),
     }
     return render(request, "enrollments/my_courses.html", context)
+
+
+@login_required
+def certificate_view(request, certificate_id=None):
+    """수료증 조회 페이지"""
+    if certificate_id:
+        # 특정 수료증 조회
+        certificate = get_object_or_404(Certificate, certificate_id=certificate_id)
+
+        # 수료증 소유자 또는 관리자만 접근 가능
+        if certificate.enrollment.student != request.user and not request.user.is_staff:
+            messages.error(request, "해당 수료증에 접근할 권한이 없습니다.")
+            return redirect("enrollments:my_certificates")
+
+        context = {
+            "certificate": certificate,
+            "enrollment": certificate.enrollment,
+            "course": certificate.enrollment.course,
+        }
+        return render(request, "enrollments/certificate_detail.html", context)
+    else:
+        # 사용자의 모든 수료증 목록 조회
+        certificates = Certificate.objects.filter(
+            enrollment__student=request.user
+        ).select_related("enrollment__course")
+
+        context = {
+            "certificates": certificates,
+            "cart_count": CartItem.objects.filter(user=request.user).count(),
+        }
+        return render(request, "enrollments/my_certificates.html", context)

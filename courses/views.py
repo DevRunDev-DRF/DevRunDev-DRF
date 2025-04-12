@@ -393,32 +393,17 @@ class CourseDetailView(DetailView):
             # 장바구니 수 가져오기
             context["cart_count"] = CartItem.objects.filter(user=user).count()
 
-        # 퀴즈 목록 (수강생 및 강사용)
-        if user.is_authenticated and (
-            context.get("is_enrolled") or user == course.instructor
-        ):
-            quizzes = Quiz.objects.filter(course=course)
+            # 수강 중인 경우 진행률 정보 추가
+            if context["is_enrolled"]:
+                enrollment = Enrollment.objects.get(student=user, course=course)
+                context["enrollment"] = enrollment
 
-            # 각 퀴즈에 대해 사용자의 퀴즈 시도 여부를 확인
-            if user != course.instructor:
-                # 강사가 아닌 경우에만 시도 여부 확인
-                quiz_attempts = QuizAttempt.objects.filter(
-                    quiz__course=course, student=user
-                ).values_list("quiz_id", flat=True)
+                # 완료된 레슨 ID 목록
+                completed_lessons = LessonProgress.objects.filter(
+                    student=user, lesson__section__course=course, completed=True
+                ).values_list("lesson_id", flat=True)
 
-                # 퀴즈 ID를 키로 하고 시도 여부를 값으로 하는 사전 생성
-                context["quiz_attempts"] = {quiz_id: True for quiz_id in quiz_attempts}
-
-            context["quizzes"] = quizzes
-
-        # 별점 분포 계산
-        rating_counts = {}
-        for rating in range(1, 6):
-            rating_counts[rating] = course.reviews.filter(rating=rating).count()
-
-        context["rating_counts"] = rating_counts
-
-        return context
+                context["completed_lessons"] = completed_lessons
 
 
 @method_decorator(login_required, name="dispatch")

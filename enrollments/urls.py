@@ -9,6 +9,7 @@ from .views import (
     cart_view,
     my_courses_view,
     delete_cart_item,
+    certificate_view,
 )
 
 router = DefaultRouter()
@@ -25,4 +26,8 @@ urlpatterns = [
     path("cart-view/", cart_view, name="cart-view"),  # 새 템플릿 뷰 경로
     path("my-courses/", my_courses_view, name="my_courses"),
     path("cart/<int:item_id>/delete/", delete_cart_item, name="delete-cart-item"),
+    path("my-certificates/", certificate_view, name="my_certificates"),
+    path(
+        "certificate/<str:certificate_id>/", certificate_view, name="certificate_detail"
+    ),
 ]
