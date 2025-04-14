@@ -4,12 +4,13 @@ from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
 
-from .models import Enrollment, LessonProgress, Certificate, CartItem
+from .models import Enrollment, LessonProgress, Certificate, CartItem, Payment
 from .serializers import (
     EnrollmentSerializer,
     EnrollmentDetailSerializer,
@@ -20,6 +21,11 @@ from .serializers import (
 from .permissions import IsEnrollmentOwner, IsCartItemOwner
 from accounts.permissions import IsInstructor
 from courses.models import Course, Lesson
+
+from iamport import Iamport
+from django.conf import settings
+import uuid
+from django.db import transaction
 
 
 class EnrollmentViewSet(viewsets.ModelViewSet):
@@ -382,6 +388,207 @@ class CartItemViewSet(viewsets.ModelViewSet):
         )
 
 
+def get_iamport_client():
+    return Iamport(
+        imp_key=settings.IAMPORT_API_KEY, imp_secret=settings.IAMPORT_API_SECRET
+    )
+
+
+class PaymentPrepareView(APIView):
+    """결제 준비 API 뷰"""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        # 사용자의 장바구니 아이템 가져오기
+        cart_items = CartItem.objects.filter(user=request.user)
+
+        if not cart_items.exists():
+            return Response(
+                {"detail": "장바구니가 비어있습니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # 총 결제 금액 계산
+        total_amount = sum(item.course.price for item in cart_items)
+
+        # 무료 강의만 있는 경우
+        if total_amount == 0:
+            # 무료 강의는 바로 수강 신청 처리
+            with transaction.atomic():
+                for item in cart_items:
+                    # 이미 수강 중인지 확인
+                    if not Enrollment.objects.filter(
+                        student=request.user, course=item.course
+                    ).exists():
+                        Enrollment.objects.create(
+                            student=request.user,
+                            course=item.course,
+                            status="in_progress",
+                            progress=0,
+                        )
+
+                # 장바구니 비우기
+                cart_items.delete()
+
+            return Response(
+                {
+                    "success": True,
+                    "message": "무료 강의 수강 신청이 완료되었습니다.",
+                    "free_course": True,
+                }
+            )
+
+        # 결제가 필요한 경우
+        # 고유한 merchant_uid 생성
+        merchant_uid = f"ORDER_{uuid.uuid4().hex[:12].upper()}"
+
+        # 결제 정보 생성
+        payment = Payment.objects.create(
+            user=request.user,
+            merchant_uid=merchant_uid,
+            amount=total_amount,
+            status="ready",
+        )
+
+        # 장바구니 아이템 연결
+        payment.cart_items.set(cart_items)
+
+        # 클라이언트에 결제 정보 반환
+        return Response(
+            {
+                "success": True,
+                "merchant_uid": merchant_uid,
+                "amount": total_amount,
+                "name": f"{request.user.username}의 강의 결제",
+                "buyer_name": request.user.username,
+                "buyer_email": request.user.email,
+                "free_course": False,
+            }
+        )
+
+
+class PaymentVerifyView(APIView):
+    """결제 검증 API 뷰"""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        imp_uid = request.data.get("imp_uid")
+        merchant_uid = request.data.get("merchant_uid")
+
+        if not imp_uid or not merchant_uid:
+            return Response(
+                {"detail": "imp_uid와 merchant_uid가 필요합니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            # 결제 정보 조회
+            payment = Payment.objects.get(merchant_uid=merchant_uid, user=request.user)
+
+            # 아임포트 결제 정보 검증
+            iamport = get_iamport_client()
+            payment_info = iamport.find(imp_uid=imp_uid)
+
+            # 결제금액 검증
+            if payment_info["amount"] == payment.amount:
+                # 데이터베이스에 결제 정보 업데이트
+                with transaction.atomic():
+                    payment.imp_uid = imp_uid
+                    payment.status = "paid"
+                    payment.save()
+
+                    # 장바구니 아이템으로 수강 신청 처리
+                    cart_items = payment.cart_items.all()
+                    for item in cart_items:
+                        # 이미 수강 중인지 확인
+                        if not Enrollment.objects.filter(
+                            student=request.user, course=item.course
+                        ).exists():
+                            Enrollment.objects.create(
+                                student=request.user,
+                                course=item.course,
+                                status="in_progress",
+                                progress=0,
+                            )
+
+                    # 장바구니 비우기
+                    CartItem.objects.filter(
+                        id__in=cart_items.values_list("id", flat=True)
+                    ).delete()
+
+                return Response(
+                    {"success": True, "message": "결제 및 수강 신청이 완료되었습니다."}
+                )
+            else:
+                # 결제금액 불일치
+                return Response(
+                    {"success": False, "message": "결제금액이 일치하지 않습니다."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        except Payment.DoesNotExist:
+            return Response(
+                {"detail": "결제 정보를 찾을 수 없습니다."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PaymentCancelView(APIView):
+    """결제 취소 API 뷰"""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        payment_id = request.data.get("payment_id")
+        reason = request.data.get("reason", "사용자 요청")
+
+        try:
+            payment = Payment.objects.get(
+                id=payment_id, user=request.user, status="paid"
+            )
+
+            # 아임포트에 취소 요청
+            iamport = get_iamport_client()
+            cancel_result = iamport.cancel(
+                imp_uid=payment.imp_uid,
+                merchant_uid=payment.merchant_uid,
+                amount=payment.amount,
+                reason=reason,
+            )
+
+            # 취소 성공 시 DB 업데이트
+            if cancel_result["status"] == "cancelled":
+                payment.status = "cancelled"
+                payment.save()
+
+                # 연관된 수강신청 삭제
+                courses = payment.cart_items.values_list("course", flat=True)
+                Enrollment.objects.filter(
+                    student=request.user,
+                    course__in=courses,
+                    created_at__gte=payment.created_at,
+                ).delete()
+
+                return Response({"success": True, "message": "결제가 취소되었습니다."})
+            else:
+                return Response(
+                    {"success": False, "message": "결제 취소에 실패했습니다."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        except Payment.DoesNotExist:
+            return Response(
+                {"detail": "결제 정보를 찾을 수 없습니다."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
 @login_required
 def delete_cart_item(request, item_id):
     """장바구니 항목 삭제 뷰"""
@@ -406,6 +613,7 @@ def cart_view(request):
         "cart_items": cart_items,
         "total_price": total_price,
         "cart_count": cart_items.count(),
+        "iamport_store_id": settings.IAMPORT_API_KEY,
     }
     return render(request, "enrollments/cart.html", context)
 

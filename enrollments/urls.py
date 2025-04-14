@@ -10,6 +10,9 @@ from .views import (
     my_courses_view,
     delete_cart_item,
     certificate_view,
+    PaymentPrepareView,
+    PaymentVerifyView,
+    PaymentCancelView,
 )
 
 router = DefaultRouter()
@@ -30,4 +33,7 @@ urlpatterns = [
     path(
         "certificate/<str:certificate_id>/", certificate_view, name="certificate_detail"
     ),
+    path("payments/prepare/", PaymentPrepareView.as_view(), name="payment-prepare"),
+    path("payments/verify/", PaymentVerifyView.as_view(), name="payment-verify"),
+    path("payments/cancel/", PaymentCancelView.as_view(), name="payment-cancel"),
 ]

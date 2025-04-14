@@ -13,4 +13,10 @@ dependencies = [
     "Pillow>=11.1.0",
     "django-filter>=25.1",
     "django-debug-toolbar>=5.1.0",
+    "certifi>=2025.1.31",
+    "charset-normalizer>=2.0.12",
+    "iamport-rest-client>=0.9.0",
+    "idna>=3.10",
+    "requests>=2.26.0",
+    "urllib3>=1.26.20",
 ]
