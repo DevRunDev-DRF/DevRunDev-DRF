@@ -2,6 +2,81 @@
 
 {% block title %}장바구니 - DevRunDev{% endblock %}
 
+{% block extra_js %}
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- iamport.payment.js -->
+<script src="https://cdn.iamport.kr/js/iamport.payment-1.2.0.js"></script>
+<script>
+    $(document).ready(function() {
+        $("#checkout-button").click(function() {
+            // 결제 준비 API 호출
+            $.ajax({
+                url: "{% url 'enrollments:payment-prepare' %}",
+                type: "POST",
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                contentType: "application/json",
+                success: function(response) {
+                    if (response.free_course) {
+                        // 무료 강의만 있는 경우 바로 완료 페이지로 이동
+                        window.location.href = "{% url 'enrollments:my_courses' %}";
+                        return;
+                    }
+                    
+                    // 결제 모듈 초기화
+                    var IMP = window.IMP;
+                    IMP.init("{{ iamport_store_id }}"); // 가맹점 식별코드
+                    
+                    // 결제 요청
+                    IMP.request_pay({
+                        pg: "html5_inicis", // PG사 (예시: KG이니시스)
+                        pay_method: "card",  // 결제수단
+                        merchant_uid: response.merchant_uid, // 주문번호
+                        name: response.name,                 // 주문명
+                        amount: response.amount,             // 결제금액
+                        buyer_email: response.buyer_email,   // 구매자 이메일
+                        buyer_name: response.buyer_name,     // 구매자 이름
+                    }, function(rsp) {
+                        if (rsp.success) {
+                            // 결제 성공 시 백엔드 검증 요청
+                            $.ajax({
+                                url: "{% url 'enrollments:payment-verify' %}",
+                                type: "POST",
+                                headers: {
+                                    "X-CSRFToken": "{{ csrf_token }}"
+                                },
+                                data: JSON.stringify({
+                                    imp_uid: rsp.imp_uid,
+                                    merchant_uid: rsp.merchant_uid
+                                }),
+                                contentType: "application/json",
+                                success: function(data) {
+                                    alert("결제가 완료되었습니다. 강의 학습을 시작하세요!");
+                                    window.location.href = "{% url 'enrollments:my_courses' %}";
+                                },
+                                error: function(xhr) {
+                                    alert("결제 검증에 실패했습니다. 관리자에게 문의하세요.");
+                                    console.error(xhr.responseText);
+                                }
+                            });
+                        } else {
+                            // 결제 실패 시 처리
+                            alert("결제에 실패했습니다: " + rsp.error_msg);
+                        }
+                    });
+                },
+                error: function(xhr) {
+                    alert("결제 준비 중 오류가 발생했습니다.");
+                    console.error(xhr.responseText);
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="max-w-4xl mx-auto">
     <h1 class="text-2xl font-bold mb-6">장바구니</h1>
@@ -21,7 +96,13 @@
                             </div>
                         </div>
                         <div class="text-right">
-                            <p class="font-bold text-lg">{{ item.course.price|floatformat:0 }}원</p>
+                            <p class="font-bold text-lg">
+                                {% if item.course.price == 0 %}
+                                    <span class="text-green-600">무료</span>
+                                {% else %}
+                                    {{ item.course.price|floatformat:0 }}원
+                                {% endif %}
+                            </p>
                             <a href="{% url 'enrollments:delete-cart-item' item.id %}" 
                                 onclick="return confirm('정말 이 항목을 장바구니에서 삭제하시겠습니까?');"
                                 class="text-red-500 hover:text-red-700 mt-1">
@@ -34,17 +115,24 @@
             
             <div class="p-4 bg-gray-50 flex justify-between items-center">
                 <span class="text-lg font-bold">총 결제 금액</span>
-                <span class="text-2xl font-bold text-blue-600">{{ total_price|floatformat:0 }}원</span>
+                <span class="text-2xl font-bold {% if total_price == 0 %}text-green-600{% else %}text-blue-600{% endif %}">
+                    {% if total_price == 0 %}
+                        무료
+                    {% else %}
+                        {{ total_price|floatformat:0 }}원
+                    {% endif %}
+                </span>
             </div>
         </div>
 
         <div class="mt-6 text-right">
-            <button hx-post="/api/cart/checkout/"
-                    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-                    hx-target="#main-content"
-                    hx-swap="innerHTML"
+            <button id="checkout-button" 
                     class="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-500 transition-colors">
-                결제하기
+                {% if total_price == 0 %}
+                    무료 수강 신청하기
+                {% else %}
+                    결제하기
+                {% endif %}
             </button>
         </div>
     {% else %}

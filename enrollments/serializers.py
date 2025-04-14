@@ -1,6 +1,6 @@
 # enrollments/serializers.py
 from rest_framework import serializers
-from .models import Enrollment, LessonProgress, Certificate, CartItem
+from .models import Enrollment, LessonProgress, Certificate, CartItem, Payment
 from accounts.serializers import UserSerializer
 from courses.serializers import CourseListSerializer
 
@@ -68,3 +68,20 @@ class CartItemSerializer(serializers.ModelSerializer):
         model = CartItem
         fields = ["id", "user", "course", "course_details", "added_at"]
         read_only_fields = ["added_at"]
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = [
+            "id",
+            "user",
+            "merchant_uid",
+            "amount",
+            "status",
+            "created_at",
+            "updated_at",
+            "imp_uid",
+            "cart_items",
+        ]
+        read_only_fields = ["user", "created_at", "updated_at"]

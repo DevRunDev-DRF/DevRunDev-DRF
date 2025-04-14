@@ -221,3 +221,38 @@ class CartItem(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.course.title}"
+
+
+class Payment(models.Model):
+    """결제 정보 모델"""
+
+    STATUS_CHOICES = [
+        ("ready", "결제 대기"),
+        ("paid", "결제 완료"),
+        ("cancelled", "결제 취소"),
+        ("failed", "결제 실패"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="payments"
+    )
+    merchant_uid = models.CharField(
+        max_length=100, unique=True, verbose_name="주문번호"
+    )
+    amount = models.PositiveIntegerField(default=0, verbose_name="결제 금액")
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default="ready", verbose_name="결제 상태"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성일")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="수정일")
+    imp_uid = models.CharField(
+        max_length=100, null=True, blank=True, verbose_name="아임포트 거래 고유번호"
+    )
+
+    # 결제와 장바구니 아이템 연결
+    cart_items = models.ManyToManyField(
+        "CartItem", related_name="payments", verbose_name="장바구니 항목"
+    )
+
+    def __str__(self):
+        return f"{self.user.username} - {self.amount}원 ({self.get_status_display()})"

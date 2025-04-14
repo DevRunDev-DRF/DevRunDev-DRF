@@ -28,6 +28,8 @@ jobs:
         echo "SECRET_KEY=test-secret-key" >> .env
         echo "DATABASE_URL=sqlite:///db.sqlite3" >> .env
         echo "ALLOWED_HOSTS=localhost,127.0.0.1" >> .env
+        echo "IAMPORT_API_KEY=test-iamport-key" >> .env
+        echo "IAMPORT_API_SECRET=test-iamport-secret" >> .env
 
     - name: 환경 변수 설정 (Windows)
       if: runner.os == 'Windows'
@@ -36,6 +38,8 @@ jobs:
         echo "SECRET_KEY=test-secret-key" | Out-File -FilePath .env -Encoding utf8 -Append
         echo "DATABASE_URL=sqlite:///db.sqlite3" | Out-File -FilePath .env -Encoding utf8 -Append
         echo "ALLOWED_HOSTS=localhost,127.0.0.1" | Out-File -FilePath .env -Encoding utf8 -Append
+        echo "IAMPORT_API_KEY=test-iamport-key" | Out-File -FilePath .env -Encoding utf8 -Append
+        echo "IAMPORT_API_SECRET=test-iamport-secret" | Out-File -FilePath .env -Encoding utf8 -Append
 
     - name: UV 설치
       run: |

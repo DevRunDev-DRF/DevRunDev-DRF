@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import Enrollment, LessonProgress, Certificate, CartItem
+from .models import Enrollment, LessonProgress, Certificate, CartItem, Payment
 
 
 @admin.register(Enrollment)
@@ -227,3 +227,28 @@ class CartItemAdmin(admin.ModelAdmin):
         self.message_user(request, f"{enrolled_count}개의 강의가 수강 신청되었습니다.")
 
     checkout_cart_items.short_description = "선택된 항목으로 수강 신청하기"
+
+
+@admin.register(Payment)
+class PaymentAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "user",
+        "merchant_uid",
+        "amount",
+        "status",
+        "created_at",
+        "updated_at",
+    )
+    list_filter = ("status", "created_at")
+    search_fields = ("user__username", "user__email", "merchant_uid", "imp_uid")
+    readonly_fields = ("created_at", "updated_at")
+
+    fieldsets = (
+        (
+            "결제 정보",
+            {"fields": ("user", "merchant_uid", "imp_uid", "amount", "status")},
+        ),
+        ("장바구니 항목", {"fields": ("cart_items",)}),
+        ("일자 정보", {"fields": ("created_at", "updated_at")}),
+    )
