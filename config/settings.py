@@ -19,9 +19,8 @@ SECRET_KEY = env("SECRET_KEY")
 DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
 
-IAMPORT_API_KEY = env("IAMPORT_API_KEY")
-IAMPORT_API_SECRET = env("IAMPORT_API_SECRET")
-
+IAMPORT_API_KEY = env("IAMPORT_API_KEY", default="")
+IAMPORT_API_SECRET = env("IAMPORT_API_SECRET", default="")
 # 데이터베이스 설정
 DATABASES = {"default": env.db()}
 
