@@ -487,13 +487,24 @@ class PaymentVerifyView(APIView):
             # 결제 정보 조회
             payment = Payment.objects.get(merchant_uid=merchant_uid, user=request.user)
 
+            print(f"Payment found: {payment.merchant_uid}, amount: {payment.amount}")
+            print(
+                f"API Keys set: {bool(settings.PORTONE_API_KEY)}, {bool(settings.PORTONE_API_SECRET)}"
+            )
+
             # 아임포트 API 키가 설정되어 있는지 확인
-            if not settings.IAMPORT_API_KEY or not settings.IAMPORT_API_SECRET:
+            if (
+                not settings.PORTONE_API_KEY
+                or not settings.PORTONE_API_SECRET
+                or settings.SKIP_PAYMENT_VERIFICATION
+            ):
                 # API 키가 설정되어 있지 않은 경우 (개발 환경 등), 결제 검증 없이 진행
                 with transaction.atomic():
                     payment.imp_uid = imp_uid
                     payment.status = "paid"
                     payment.save()
+
+                    print("Dev mode: Payment marked as paid without verification")
 
                     # 장바구니 아이템으로 수강 신청 처리
                     cart_items = payment.cart_items.all()
@@ -645,6 +656,10 @@ def cart_view(request):
 
     # 장바구니 총액 계산
     total_price = sum(item.course.price for item in cart_items)
+
+    # 디버깅용 로그 추가
+    print(f"PORTONE_SHOP_ID: {settings.PORTONE_SHOP_ID}")
+    print(f"PORTONE_PG_PROVIDER: {settings.PORTONE_PG_PROVIDER}")
 
     context = {
         "cart_items": cart_items,

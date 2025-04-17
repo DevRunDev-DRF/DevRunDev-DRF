@@ -30,7 +30,8 @@
                     
                     // 결제 모듈 초기화
                     var IMP = window.IMP;
-                    IMP.init("{{ portone_store_id }}"); // 가맹점 식별코드
+                    console.log("Initializing IMP with shop ID:", "{{ portone_store_id }}");
+                    IMP.init("{{ portone_store_id }}"); // 가맹점 식별자
                     
                     // 결제 요청
                     IMP.request_pay({
@@ -131,14 +132,19 @@
         </div>
 
         <div class="mt-6 text-right">
-            <button id="checkout-button" 
-                    class="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-500 transition-colors">
-                {% if total_price == 0 %}
-                    무료 수강 신청하기
-                {% else %}
+            {% if total_price == 0 %}
+                <!-- 무료 강의만 있을 경우 별도 폼으로 처리 -->
+                <form method="post" action="{% url 'enrollments:checkout-free' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="bg-green-600 text-white px-6 py-3 rounded hover:bg-green-500 transition-colors">
+                        무료 수강 신청하기
+                    </button>
+                </form>
+            {% else %}
+                <button id="checkout-button" class="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-500 transition-colors">
                     결제하기
-                {% endif %}
-            </button>
+                </button>
+            {% endif %}
         </div>
     {% else %}
         <div class="bg-white shadow-md rounded-lg p-8 text-center">

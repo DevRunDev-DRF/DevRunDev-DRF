@@ -32,7 +32,7 @@ class Course(models.Model):
         from django.db.models import Avg
 
         # 디버깅을 위한 로그 추가
-        print(f"Updating avg_rating for course {self.id}: {self.title}")
+        print(f"Updating avg_rating for course {self.id}")
 
         # 모든 리뷰 확인
         reviews = self.reviews.all()
