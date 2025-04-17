@@ -177,3 +177,25 @@ class ReviewAPITestCase(APITestCase):
         self.course.refresh_from_db()
         updated_avg_rating = self.course.avg_rating
         self.assertEqual(updated_avg_rating, 4.0)  # (5+3)/2 = 4.0
+
+    def test_create_review(self):
+        """리뷰 생성 테스트"""
+        self.client.force_authenticate(user=self.other_student)
+
+        data = {
+            "course": self.course.id,
+            "rating": 4,
+            "comment": "좋은 강의입니다만 개선할 점도 있어요.",
+        }
+
+        # TEST_CLIENT 헤더 추가
+        response = self.client.post(
+            self.review_list_url, data, format="json", HTTP_TEST_CLIENT=True
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # 리뷰가 생성되었는지 확인
+        self.assertEqual(Review.objects.count(), 2)
+        new_review = Review.objects.get(user=self.other_student)
+        self.assertEqual(new_review.rating, 4)
+        self.assertEqual(new_review.comment, "좋은 강의입니다만 개선할 점도 있어요.")

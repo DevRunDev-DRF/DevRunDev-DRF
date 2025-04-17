@@ -520,8 +520,8 @@ class PaymentVerifyView(APIView):
             else:
                 # 아임포트 결제 정보 검증
                 iamport = Iamport(
-                    imp_key=settings.IAMPORT_API_KEY,
-                    imp_secret=settings.IAMPORT_API_SECRET,
+                    imp_key=settings.PORTONE_API_KEY,
+                    imp_secret=settings.PORTONE_API_SECRET,
                 )
                 payment_info = iamport.find(imp_uid=imp_uid)
 
@@ -650,7 +650,9 @@ def cart_view(request):
         "cart_items": cart_items,
         "total_price": total_price,
         "cart_count": cart_items.count(),
-        "iamport_store_id": settings.IAMPORT_API_KEY,
+        "portone_store_id": settings.PORTONE_SHOP_ID,
+        "portone_pg_provider": settings.PORTONE_PG_PROVIDER,
+        "debug": settings.DEBUG,
     }
     return render(request, "enrollments/cart.html", context)
 
