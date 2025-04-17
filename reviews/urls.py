@@ -8,7 +8,8 @@ from .views import (
 )
 
 router = DefaultRouter()
-router.register(r"", ReviewViewSet)
+# URL 이름을 'reviews-list'와 'reviews-detail'로 생성하도록 변경
+router.register(r"reviews", ReviewViewSet, basename="reviews")
 
 app_name = "reviews"
 
