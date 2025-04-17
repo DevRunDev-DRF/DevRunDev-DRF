@@ -12,6 +12,8 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from .models import Review
 from .serializers import ReviewSerializer
 from courses.models import Course
+from django.shortcuts import redirect
+from django.contrib import messages
 
 
 # 리뷰 소유자만 수정/삭제할 수 있는 권한 클래스
@@ -33,7 +35,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthenticated, IsReviewOwnerOrReadOnly]  # 권한 클래스 추가
+    permission_classes = [IsAuthenticated]  # 권한 클래스 추가
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ["comment"]
     ordering_fields = ["created_at", "rating"]
@@ -56,11 +58,39 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
         return queryset
 
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-        # 리뷰 생성 후 평균 평점 업데이트
-        course = serializer.validated_data["course"]
-        course.update_avg_rating()
+    def create(self, request, *args, **kwargs):
+        """리뷰 생성 오버라이드"""
+        # HTML 폼 제출 여부 확인
+        is_html_request = (
+            request.accepted_renderer.format == "html"
+            or "text/html" in request.headers.get("Accept", "")
+        )
+
+        # 데이터에 사용자 ID 추가
+        data = request.data.copy()
+        data["user"] = request.user.id
+
+        serializer = self.get_serializer(data=data)
+        try:
+            serializer.is_valid(raise_exception=True)
+            review = serializer.save(user=request.user)
+
+            # 강의 평균 평점 업데이트
+            course = review.course
+            course.update_avg_rating()
+
+            # HTML 폼 제출인 경우 리다이렉트
+            if is_html_request:
+                messages.success(request, "리뷰가 성공적으로 작성되었습니다.")
+                return redirect("courses:course-detail", pk=course.id)
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            if is_html_request:
+                messages.error(request, f"리뷰 작성 중 오류가 발생했습니다: {str(e)}")
+                return redirect("courses:course-detail", pk=data.get("course"))
+
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def perform_update(self, serializer):
         serializer.save()
@@ -82,10 +112,8 @@ def review_edit_view(request, review_id):
 
     # 권한 확인 - 자신의 리뷰만 수정 가능
     if review.user != request.user:
-        if request.headers.get("HX-Request"):
-            # HTMX 요청인 경우 403 상태 코드와 에러 메시지 반환
+        if "HX-Request" in request.headers:
             return HttpResponse("권한이 없습니다.", status=403)
-        # 일반 요청인 경우 리디렉션
         messages.error(request, "자신의 리뷰만 수정할 수 있습니다.")
         return redirect("courses:course-detail", pk=review.course.id)
 
@@ -94,16 +122,26 @@ def review_edit_view(request, review_id):
         comment = request.POST.get("comment")
 
         if rating and comment:
-            review.rating = rating
+            # 이전 값 저장
+            old_rating = review.rating
+            old_comment = review.comment
+
+            # 새 값 설정
+            review.rating = int(rating)
             review.comment = comment
             review.save()
+
+            # 값이 변경되었는지 로그 출력
+            print(f"Rating changed: {old_rating} -> {review.rating}")
+            print(f"Comment changed: {old_comment} -> {review.comment}")
 
             # 리뷰 수정 후 평균 평점 업데이트
             review.course.update_avg_rating()
 
+            # 수정된 리뷰 렌더링하여 반환
             return render(request, "reviews/review_item.html", {"review": review})
 
-    # GET 요청 또는 유효하지 않은 POST 요청
+    # GET 요청이나 유효하지 않은 POST 요청
     return render(request, "reviews/review_edit_form.html", {"review": review})
 
 
@@ -112,20 +150,29 @@ def review_delete_view(request, review_id):
     """리뷰 삭제 HTMX 뷰"""
     review = get_object_or_404(Review, id=review_id)
     course = review.course
+    user = request.user
 
     # 권한 확인 - 자신의 리뷰만 삭제 가능
-    if review.user != request.user:
-        if request.headers.get("HX-Request"):
-            # HTMX 요청인 경우 403 상태 코드와 에러 메시지 반환
+    if review.user != user:
+        if "HX-Request" in request.headers:
             return HttpResponse("권한이 없습니다.", status=403)
-        # 일반 요청인 경우 리디렉션
         messages.error(request, "자신의 리뷰만 삭제할 수 있습니다.")
         return redirect("courses:course-detail", pk=course.id)
 
-    if request.method == "DELETE":
-        review.delete()
-        # 리뷰 삭제 후 평균 평점 업데이트
-        course.update_avg_rating()
-        return HttpResponse(status=200)
+    # 리뷰 삭제
+    review.delete()
 
+    # 리뷰 삭제 후 평균 평점 업데이트
+    course.update_avg_rating()
+
+    if "HX-Request" in request.headers:
+        # HTMX 요청인 경우 리뷰 작성 폼 반환
+        context = {
+            "course": course,
+            "user": user,
+            "is_enrolled": True,  # 리뷰를 작성했었으므로 수강 중임
+        }
+        return render(request, "reviews/review_form.html", context)
+
+    messages.success(request, "리뷰가 삭제되었습니다.")
     return redirect("courses:course-detail", pk=course.id)

@@ -31,7 +31,7 @@
                             class="text-blue-600 hover:underline mr-2">
                         수정
                     </button>
-                    <button hx-delete="{% url 'reviews:review-detail' review.id %}" 
+                    <button hx-delete="{% url 'reviews:review-delete' review.id %}" 
                             hx-confirm="정말 리뷰를 삭제하시겠습니까?" 
                             hx-target="closest div.border-b"
                             hx-swap="outerHTML"
