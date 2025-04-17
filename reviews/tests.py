@@ -1,6 +1,11 @@
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
+import sys
+import io
+
+# 테스트 실행 시 출력 인코딩을 UTF-8로 설정
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 from accounts.models import User
 from courses.models import Course
