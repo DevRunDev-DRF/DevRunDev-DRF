@@ -1,6 +1,6 @@
 <!-- HTMX로 로드되는 리뷰 수정 폼 -->
-<div class="border-b border-gray-200 pb-4">
-    <form hx-put="{% url 'reviews:review-detail' review.id %}" 
+<div class="border-b border-gray-200 pb-4 {% if not forloop.last %}mb-4{% endif %}">
+    <form hx-post="{% url 'reviews:review-edit' review.id %}" 
           hx-target="closest div.border-b" 
           hx-swap="outerHTML"
           class="space-y-4">
@@ -8,12 +8,12 @@
         
         <div>
             <label class="block text-gray-700 font-medium mb-2">평점</label>
-            <div class="flex space-x-2">
-                {% for i in '12345' %}
+            <div class="flex space-x-2" id="edit-rating-{{ review.id }}">
+                {% for i in "12345" %}
                     <label class="cursor-pointer">
                         <input type="radio" name="rating" value="{{ i }}" class="hidden peer" 
-                               {% if review.rating == i|add:'0' %}checked{% endif %}>
-                        <svg class="w-8 h-8 text-gray-300 peer-checked:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                               {% if review.rating == forloop.counter %}checked{% endif %}>
+                        <svg class="w-8 h-8 {% if forloop.counter <= review.rating %}text-yellow-400{% else %}text-gray-300{% endif %} peer-checked:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
                         </svg>
                     </label>
@@ -31,11 +31,77 @@
             <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors">
                 저장
             </button>
-            <button type="button" hx-get="{% url 'reviews:review-detail' review.id %}"
-                   hx-target="closest div.border-b"
-                   class="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 transition-colors">
+            <button type="button" 
+                    onclick="window.location.reload()"
+                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 transition-colors">
                 취소
             </button>
         </div>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 별점 선택 기능 초기화
+    const ratingContainer = document.getElementById('edit-rating-{{ review.id }}');
+    if (ratingContainer) {
+        const stars = ratingContainer.querySelectorAll('label');
+        const inputs = ratingContainer.querySelectorAll('input[type="radio"]');
+        
+        // 별에 마우스 호버 시 해당 별까지 모두 하이라이트
+        stars.forEach((star, index) => {
+            star.addEventListener('mouseenter', () => {
+                // 현재 별까지 모두 하이라이트
+                for (let i = 0; i <= index; i++) {
+                    stars[i].querySelector('svg').classList.add('text-yellow-400');
+                    stars[i].querySelector('svg').classList.remove('text-gray-300');
+                }
+                // 현재 별 이후는 회색으로
+                for (let i = index + 1; i < stars.length; i++) {
+                    stars[i].querySelector('svg').classList.remove('text-yellow-400');
+                    stars[i].querySelector('svg').classList.add('text-gray-300');
+                }
+            });
+            
+            // 클릭하면 해당 값 선택
+            star.addEventListener('click', () => {
+                inputs[index].checked = true;
+                
+                // 현재 별까지 모두 하이라이트
+                for (let i = 0; i <= index; i++) {
+                    stars[i].querySelector('svg').classList.add('text-yellow-400');
+                    stars[i].querySelector('svg').classList.remove('text-gray-300');
+                }
+                // 현재 별 이후는 회색으로
+                for (let i = index + 1; i < stars.length; i++) {
+                    stars[i].querySelector('svg').classList.remove('text-yellow-400');
+                    stars[i].querySelector('svg').classList.add('text-gray-300');
+                }
+            });
+        });
+        
+        // 마우스가 나갔을 때는 선택된 값만 하이라이트
+        ratingContainer.addEventListener('mouseleave', () => {
+            let selectedIndex = -1;
+            
+            // 선택된 별 인덱스 찾기
+            inputs.forEach((input, index) => {
+                if (input.checked) {
+                    selectedIndex = index;
+                }
+            });
+            
+            // 선택된 별까지 하이라이트
+            stars.forEach((star, index) => {
+                if (index <= selectedIndex) {
+                    star.querySelector('svg').classList.add('text-yellow-400');
+                    star.querySelector('svg').classList.remove('text-gray-300');
+                } else {
+                    star.querySelector('svg').classList.remove('text-yellow-400');
+                    star.querySelector('svg').classList.add('text-gray-300');
+                }
+            });
+        });
+    }
+});
+</script>

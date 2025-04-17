@@ -1,0 +1,71 @@
+<div class="mb-6 p-4 bg-gray-50 rounded">
+    <h3 class="font-bold mb-2">리뷰 작성하기</h3>
+    <form method="post" action="{% url 'reviews:reviews-list' %}" 
+          id="review-form-delete" class="space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="course" value="{{ course.id }}">
+        
+        <div>
+            <label class="block text-gray-700 font-medium mb-2">평점</label>
+            <div class="flex space-x-2" id="star-rating-new">
+                {% for i in '12345' %}
+                    <label class="cursor-pointer group">
+                        <input type="radio" name="rating" value="{{ i }}" class="hidden peer" {% if forloop.last %}checked{% endif %}>
+                        <svg class="w-8 h-8 text-gray-300 peer-checked:text-yellow-400 group-hover:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                        </svg>
+                    </label>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div>
+            <label for="comment-new" class="block text-gray-700 font-medium mb-2">리뷰 내용</label>
+            <textarea name="comment" id="comment-new" rows="3" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="이 강의에 대한 솔직한 리뷰를 작성해주세요"></textarea>
+        </div>
+        
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors">
+            리뷰 제출
+        </button>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 별점 컨테이너 초기화
+    initializeStarRating('star-rating-new');
+    
+    // 폼 제출 시 페이지 새로고침
+    const form = document.getElementById('review-form-delete');
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(form);
+            
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    // 성공 시 페이지 새로고침
+                    window.location.reload();
+                } else {
+                    // 오류 발생 시 알림
+                    alert('리뷰 작성 중 오류가 발생했습니다.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('리뷰 작성 중 오류가 발생했습니다.');
+            });
+        });
+    }
+});
+</script>

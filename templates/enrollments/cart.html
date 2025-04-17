@@ -30,11 +30,11 @@
                     
                     // 결제 모듈 초기화
                     var IMP = window.IMP;
-                    IMP.init("{{ iamport_store_id }}"); // 가맹점 식별코드
+                    IMP.init("{{ portone_store_id }}"); // 가맹점 식별코드
                     
                     // 결제 요청
                     IMP.request_pay({
-                        pg: "html5_inicis", // PG사 (예시: KG이니시스)
+                        pg: "{{ portone_pg_provider }}", // PG사 (예시: KG이니시스)
                         pay_method: "card",  // 결제수단
                         merchant_uid: response.merchant_uid, // 주문번호
                         name: response.name,                 // 주문명
