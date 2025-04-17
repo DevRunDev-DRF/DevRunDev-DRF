@@ -198,7 +198,7 @@
             {% if is_enrolled and not user_review %}
                 <div class="mb-6 p-4 bg-gray-50 rounded">
                     <h3 class="font-bold mb-2">리뷰 작성하기</h3>
-                    <form hx-post="{% url 'reviews:review-list' %}" hx-swap="outerHTML" class="space-y-4">
+                    <form hx-post="{% url 'reviews:reviews-list' %}" hx-swap="outerHTML" class="space-y-4">
                         {% csrf_token %}
                         <input type="hidden" name="course" value="{{ course.id }}">
                         
@@ -219,8 +219,8 @@
                         <div>
                             <label for="comment" class="block text-gray-700 font-medium mb-2">리뷰 내용</label>
                             <textarea name="comment" id="comment" rows="3" required
-                                     class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                     placeholder="이 강의에 대한 솔직한 리뷰를 작성해주세요"></textarea>
+                                    class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="이 강의에 대한 솔직한 리뷰를 작성해주세요"></textarea>
                         </div>
                         
                         <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors">
@@ -233,50 +233,7 @@
             <!-- 리뷰 목록 -->
             <div class="space-y-4">
                 {% for review in course.reviews.all %}
-                    <div class="border-b border-gray-200 pb-4 {% if not forloop.last %}mb-4{% endif %}">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <div class="flex items-center mb-1">
-                                    <div class="flex mr-2">
-                                        {% for i in "12345" %}
-                                            {% if forloop.counter <= review.rating %}
-                                                <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                                                </svg>
-                                            {% else %}
-                                                <svg class="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                                                </svg>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </div>
-                                    <span class="font-medium">{{ review.user.username }}</span>
-                                </div>
-                                <p class="text-gray-700">{{ review.comment }}</p>
-                            </div>
-                            
-                            <div class="text-xs text-gray-500">
-                                {{ review.created_at|date:"Y년 m월 d일" }}
-                                
-                                {% if review.user == user %}
-                                    <div class="mt-1">
-                                        <button hx-get="{% url 'reviews:review-edit' review.id %}" 
-                                                hx-target="closest div.border-b" 
-                                                class="text-blue-600 hover:underline mr-2">
-                                            수정
-                                        </button>
-                                        <button hx-delete="{% url 'reviews:review-detail' review.id %}" 
-                                                hx-confirm="정말 리뷰를 삭제하시겠습니까?" 
-                                                hx-target="closest div.border-b"
-                                                hx-swap="outerHTML"
-                                                class="text-red-600 hover:underline">
-                                            삭제
-                                        </button>
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
+                    {% include 'reviews/review_item.html' with review=review %}
                 {% endfor %}
             </div>
         {% else %}
@@ -285,7 +242,7 @@
             {% if is_enrolled %}
                 <div class="mt-4 p-4 bg-gray-50 rounded">
                     <h3 class="font-bold mb-2">첫 리뷰를 작성해보세요</h3>
-                    <form hx-post="{% url 'reviews:review-list' %}" hx-swap="outerHTML" class="space-y-4">
+                    <form hx-post="{% url 'reviews:reviews-list' %}" hx-swap="outerHTML" class="space-y-4">
                         {% csrf_token %}
                         <input type="hidden" name="course" value="{{ course.id }}">
                         
@@ -293,32 +250,32 @@
                             <label class="block text-gray-700 font-medium mb-2">평점</label>
                             <div class="flex space-x-2">
                                 {% for i in '12345' %}
-                                    <label class="cursor-pointer">
-                                        <input type="radio" name="rating" value="{{ i }}" class="hidden peer" {% if forloop.last %}checked{% endif %}>
-                                        <svg class="w-8 h-8 text-gray-300 peer-checked:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                                        </svg>
-                                    </label>
-                                {% endfor %}
-                            </div>
+                                            <label class="cursor-pointer">
+                                                <input type="radio" name="rating" value="{{ i }}" class="hidden peer" {% if forloop.last %}checked{% endif %}>
+                                                <svg class="w-8 h-8 text-gray-300 peer-checked:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                </svg>
+                                            </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label for="comment" class="block text-gray-700 font-medium mb-2">리뷰 내용</label>
+                                    <textarea name="comment" id="comment" rows="3" required
+                                            class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="이 강의에 대한 솔직한 리뷰를 작성해주세요"></textarea>
+                                </div>
+                                
+                                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors">
+                                    리뷰 제출
+                                </button>
+                            </form>
                         </div>
-                        
-                        <div>
-                            <label for="comment" class="block text-gray-700 font-medium mb-2">리뷰 내용</label>
-                            <textarea name="comment" id="comment" rows="3" required
-                                     class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                     placeholder="이 강의에 대한 솔직한 리뷰를 작성해주세요"></textarea>
-                        </div>
-                        
-                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors">
-                            리뷰 제출
-                        </button>
-                    </form>
-                </div>
-            {% endif %}
-        {% endif %}
-    </div>
-    
+                    {% endif %}
+                {% endif %}
+            </div>
+        
     <!-- 퀴즈 섹션 (수강생 및 강사만 볼 수 있음) -->
     {% if is_enrolled or user == course.instructor %}
     <div class="bg-white rounded-lg shadow-md p-6">

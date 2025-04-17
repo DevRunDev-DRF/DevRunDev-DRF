@@ -49,7 +49,7 @@
                                     완료됨
                                 </span>
                             {% else %}
-                                <form hx-post="{% url 'enrollments:progress-mark-completed' %}" 
+                                <form hx-post="{% url 'enrollments:lessonprogress-mark-completed' %}" 
                                       hx-vals='{"lesson": {{ lesson.id }}}' 
                                       hx-target="#lessonProgressContainer"
                                       hx-swap="outerHTML">
@@ -83,7 +83,7 @@
                                             수정
                                         </a>
                                     {% else %}
-                                        {% if quiz.attempts.filter.student=user.exists %}
+                                        {% if quiz.attempts.filter.student == user %}
                                             <a href="{% url 'quizzes:quiz-attempt' quiz.id %}" class="text-blue-600 hover:underline">
                                                 결과 보기
                                             </a>

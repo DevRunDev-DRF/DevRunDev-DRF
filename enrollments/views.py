@@ -487,13 +487,9 @@ class PaymentVerifyView(APIView):
             # 결제 정보 조회
             payment = Payment.objects.get(merchant_uid=merchant_uid, user=request.user)
 
-            # 아임포트 결제 정보 검증
-            iamport = get_iamport_client()
-            payment_info = iamport.find(imp_uid=imp_uid)
-
-            # 결제금액 검증
-            if payment_info["amount"] == payment.amount:
-                # 데이터베이스에 결제 정보 업데이트
+            # 아임포트 API 키가 설정되어 있는지 확인
+            if not settings.IAMPORT_API_KEY or not settings.IAMPORT_API_SECRET:
+                # API 키가 설정되어 있지 않은 경우 (개발 환경 등), 결제 검증 없이 진행
                 with transaction.atomic():
                     payment.imp_uid = imp_uid
                     payment.status = "paid"
@@ -522,11 +518,52 @@ class PaymentVerifyView(APIView):
                     {"success": True, "message": "결제 및 수강 신청이 완료되었습니다."}
                 )
             else:
-                # 결제금액 불일치
-                return Response(
-                    {"success": False, "message": "결제금액이 일치하지 않습니다."},
-                    status=status.HTTP_400_BAD_REQUEST,
+                # 아임포트 결제 정보 검증
+                iamport = Iamport(
+                    imp_key=settings.IAMPORT_API_KEY,
+                    imp_secret=settings.IAMPORT_API_SECRET,
                 )
+                payment_info = iamport.find(imp_uid=imp_uid)
+
+                # 결제금액 검증
+                if payment_info["amount"] == payment.amount:
+                    # 데이터베이스에 결제 정보 업데이트
+                    with transaction.atomic():
+                        payment.imp_uid = imp_uid
+                        payment.status = "paid"
+                        payment.save()
+
+                        # 장바구니 아이템으로 수강 신청 처리
+                        cart_items = payment.cart_items.all()
+                        for item in cart_items:
+                            # 이미 수강 중인지 확인
+                            if not Enrollment.objects.filter(
+                                student=request.user, course=item.course
+                            ).exists():
+                                Enrollment.objects.create(
+                                    student=request.user,
+                                    course=item.course,
+                                    status="in_progress",
+                                    progress=0,
+                                )
+
+                        # 장바구니 비우기
+                        CartItem.objects.filter(
+                            id__in=cart_items.values_list("id", flat=True)
+                        ).delete()
+
+                    return Response(
+                        {
+                            "success": True,
+                            "message": "결제 및 수강 신청이 완료되었습니다.",
+                        }
+                    )
+                else:
+                    # 결제금액 불일치
+                    return Response(
+                        {"success": False, "message": "결제금액이 일치하지 않습니다."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
 
         except Payment.DoesNotExist:
             return Response(
@@ -663,3 +700,54 @@ def certificate_view(request, certificate_id=None):
             "cart_count": CartItem.objects.filter(user=request.user).count(),
         }
         return render(request, "enrollments/my_certificates.html", context)
+
+
+@login_required
+def checkout_free_course(request):
+    """무료 강의 체크아웃 뷰"""
+    if request.method != "POST":
+        return redirect("enrollments:cart-view")
+
+    # 사용자의 장바구니 아이템 가져오기
+    cart_items = CartItem.objects.filter(user=request.user)
+
+    if not cart_items.exists():
+        messages.error(request, "장바구니가 비어있습니다.")
+        return redirect("enrollments:cart-view")
+
+    # 총 결제 금액 계산
+    total_amount = sum(item.course.price for item in cart_items)
+
+    # 무료 강의만 있는지 확인
+    if total_amount > 0:
+        messages.error(request, "무료 강의만 이 기능을 사용할 수 있습니다.")
+        return redirect("enrollments:cart-view")
+
+    # 무료 강의 수강 신청 처리
+    enrollments_created = []
+
+    with transaction.atomic():
+        for item in cart_items:
+            # 이미 수강 중인지 확인
+            if not Enrollment.objects.filter(
+                student=request.user, course=item.course
+            ).exists():
+                enrollment = Enrollment.objects.create(
+                    student=request.user,
+                    course=item.course,
+                    status="in_progress",
+                    progress=0,
+                )
+                enrollments_created.append(enrollment)
+
+        # 장바구니 비우기
+        cart_items.delete()
+
+    if enrollments_created:
+        messages.success(
+            request, f"{len(enrollments_created)}개 강의의 수강 신청이 완료되었습니다."
+        )
+    else:
+        messages.info(request, "이미 수강 중인 강의입니다.")
+
+    return redirect("enrollments:my_courses")

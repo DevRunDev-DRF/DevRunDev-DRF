@@ -15,9 +15,12 @@
                 url: "{% url 'enrollments:payment-prepare' %}",
                 type: "POST",
                 headers: {
-                    "X-CSRFToken": "{{ csrf_token }}"
+                    "X-CSRFToken": "{{ csrf_token }}",
+                    "Content-Type": "application/json"
                 },
+                data: JSON.stringify({}),  // 빈 JSON 객체 전송
                 contentType: "application/json",
+                dataType: "json",
                 success: function(response) {
                     if (response.free_course) {
                         // 무료 강의만 있는 경우 바로 완료 페이지로 이동
@@ -45,13 +48,15 @@
                                 url: "{% url 'enrollments:payment-verify' %}",
                                 type: "POST",
                                 headers: {
-                                    "X-CSRFToken": "{{ csrf_token }}"
+                                    "X-CSRFToken": "{{ csrf_token }}",
+                                    "Content-Type": "application/json"
                                 },
                                 data: JSON.stringify({
                                     imp_uid: rsp.imp_uid,
                                     merchant_uid: rsp.merchant_uid
                                 }),
                                 contentType: "application/json",
+                                dataType: "json",
                                 success: function(data) {
                                     alert("결제가 완료되었습니다. 강의 학습을 시작하세요!");
                                     window.location.href = "{% url 'enrollments:my_courses' %}";
