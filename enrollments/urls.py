@@ -14,6 +14,7 @@ from .views import (
     PaymentVerifyView,
     PaymentCancelView,
     checkout_free_course,
+    print_certificate_view,
 )
 
 router = DefaultRouter()
@@ -38,4 +39,9 @@ urlpatterns = [
     path("payments/verify/", PaymentVerifyView.as_view(), name="payment-verify"),
     path("payments/cancel/", PaymentCancelView.as_view(), name="payment-cancel"),
     path("checkout-free/", checkout_free_course, name="checkout-free"),
+    path(
+        "certificate/<str:certificate_id>/print/",
+        print_certificate_view,
+        name="certificate_print",
+    ),
 ]

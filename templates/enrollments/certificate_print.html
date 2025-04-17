@@ -1,0 +1,397 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수료증 - {{ certificate.enrollment.course.title }} - DevRunDev</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+        
+        html, body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: white;
+            height: 100%;
+        }
+        
+        .container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        .certificate-container {
+            width: 210mm;  /* A4 가로 너비 */
+            height: 297mm;  /* A4 세로 높이 */
+            position: relative;
+            background-color: white;
+            box-sizing: border-box;
+            padding: 40px;
+        }
+        
+        .certificate-frame {
+            border: 20px solid #f0f0f0;
+            border-image: linear-gradient(45deg, #3b82f6, #10b981) 1;
+            padding: 40px;
+            height: calc(100% - 40px);
+            width: calc(100% - 40px);
+            box-sizing: border-box;
+            position: relative;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%233b82f6' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+        }
+        
+        .certificate-content {
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .certificate-seal {
+            position: absolute;
+            top: 50px;
+            right: 60px;
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #3b82f6, #10b981);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            transform: rotate(15deg);
+            opacity: 0.9;
+            border: 4px solid white;
+            z-index: 3;
+        }
+        
+        .certificate-seal-inner {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            border: 2px dashed rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .certificate-title {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 1rem;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .certificate-title:after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, #3b82f6, #10b981);
+            border-radius: 2px;
+        }
+        
+        .certificate-subtitle {
+            font-size: 1.5rem;
+            color: #4b5563;
+            margin-bottom: 3rem;
+        }
+        
+        .course-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 2rem;
+            padding: 10px 20px;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .course-title:before, .course-title:after {
+            content: '✦';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #3b82f6;
+            font-size: 1.5rem;
+        }
+        
+        .course-title:before {
+            left: -10px;
+        }
+        
+        .course-title:after {
+            right: -10px;
+        }
+        
+        .student-info {
+            margin-bottom: 3rem;
+        }
+        
+        .student-label {
+            font-size: 1.25rem;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+        
+        .student-name {
+            font-size: 2rem;
+            font-weight: 500;
+            color: #1f2937;
+        }
+        
+        .certificate-id-box {
+            display: inline-block;
+            background: linear-gradient(to right, rgba(59, 130, 246, 0.1), rgba(16, 185, 129, 0.1));
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 15px 30px;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        
+        .certificate-id-label {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+        
+        .certificate-id-value {
+            font-family: 'Courier New', monospace;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+            letter-spacing: 1px;
+        }
+        
+        .certificate-date {
+            font-size: 1.1rem;
+            color: #6b7280;
+            margin-bottom: 2rem;
+        }
+        
+        .certificate-footer {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 2rem;
+            border-top: 1px solid #e5e7eb;
+            margin-top: 2rem;
+        }
+        
+        .footer-item {
+            text-align: center;
+            flex: 1;
+            padding: 0 20px;
+        }
+        
+        .footer-label {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+        
+        .footer-value {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #1f2937;
+            position: relative;
+        }
+        
+        .footer-value:after {
+            content: '';
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 1px;
+            background-color: #9ca3af;
+        }
+        
+        .certificate-corner {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+        }
+        
+        .corner-top-left {
+            top: 0;
+            left: 0;
+            border-top: 4px solid #3b82f6;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .corner-top-right {
+            top: 0;
+            right: 0;
+            border-top: 4px solid #3b82f6;
+            border-right: 4px solid #3b82f6;
+        }
+        
+        .corner-bottom-left {
+            bottom: 0;
+            left: 0;
+            border-bottom: 4px solid #10b981;
+            border-left: 4px solid #10b981;
+        }
+        
+        .corner-bottom-right {
+            bottom: 0;
+            right: 0;
+            border-bottom: 4px solid #10b981;
+            border-right: 4px solid #10b981;
+        }
+        
+        .back-button {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Noto Sans KR', sans-serif;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .back-button:hover {
+            background-color: #2563eb;
+        }
+        
+        .print-button {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background-color: #10b981;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Noto Sans KR', sans-serif;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .print-button:hover {
+            background-color: #059669;
+        }
+        
+        @media print {
+            .back-button, .print-button {
+                display: none;
+            }
+            
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            
+            .container {
+                padding: 0;
+            }
+            
+            .certificate-container {
+                width: 100%;
+                height: 100%;
+                padding: 0;
+            }
+            
+            .certificate-frame {
+                border-width: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="back-button" onclick="window.location.href='{% url 'enrollments:my_certificates' %}'">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        돌아가기
+    </button>
+    
+    <button class="print-button" onclick="window.print()">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+        </svg>
+        인쇄하기
+    </button>
+    
+    <div class="container">
+        <div class="certificate-container">
+            <div class="certificate-frame">
+                <!-- 모서리 장식 -->
+                <div class="certificate-corner corner-top-left"></div>
+                <div class="certificate-corner corner-top-right"></div>
+                <div class="certificate-corner corner-bottom-left"></div>
+                <div class="certificate-corner corner-bottom-right"></div>
+                
+                <!-- 공식 인증 스탬프 -->
+                <div class="certificate-seal">
+                    <div class="certificate-seal-inner">
+                        <span>DevRun<br>Dev</span>
+                    </div>
+                </div>
+                
+                <!-- 수료증 내용 -->
+                <div class="certificate-content">
+                    <h1 class="certificate-title">수료증</h1>
+                    <p class="certificate-subtitle">이 수료증은 아래 과정의 성공적인 완료를 증명합니다</p>
+                    
+                    <h2 class="course-title">{{ certificate.enrollment.course.title }}</h2>
+                    
+                    <div class="student-info">
+                        <p class="student-label">수강자</p>
+                        <p class="student-name">{{ certificate.enrollment.student.username }}</p>
+                    </div>
+                    
+                    <div class="certificate-id-box">
+                        <div class="certificate-id-label">수료증 ID</div>
+                        <div class="certificate-id-value">{{ certificate.certificate_id }}</div>
+                    </div>
+                    
+                    <p class="certificate-date">
+                        발급일: {{ certificate.issued_at|date:"Y년 m월 d일" }}
+                    </p>
+                    
+                    <div class="certificate-footer">
+                        <div class="footer-item">
+                            <p class="footer-label">발급자</p>
+                            <p class="footer-value">DevRunDev 교육 플랫폼</p>
+                        </div>
+                        <div class="footer-item">
+                            <p class="footer-label">강사</p>
+                            <p class="footer-value">{{ certificate.enrollment.course.instructor.username }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

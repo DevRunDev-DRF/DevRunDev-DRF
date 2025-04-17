@@ -2,9 +2,276 @@
 
 {% block title %}수료증 - {{ certificate.enrollment.course.title }} - DevRunDev{% endblock %}
 
+{% block extra_css %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+  
+  .certificate-container {
+    font-family: 'Noto Sans KR', sans-serif;
+    max-width: 900px;
+    margin: 0 auto;
+    position: relative;
+  }
+  
+  .certificate-frame {
+    position: relative;
+    border: 20px solid #f0f0f0;
+    border-image: linear-gradient(45deg, #3b82f6, #10b981) 1;
+    padding: 40px 50px;
+    background-color: #ffffff;
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%233b82f6' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  }
+  
+  .certificate-content {
+    text-align: center;
+    position: relative;
+    z-index: 2;
+  }
+  
+  .certificate-seal {
+    position: absolute;
+    top: 50px;
+    right: 60px;
+    width: 120px;
+    height: 120px;
+    background: linear-gradient(135deg, #3b82f6, #10b981);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: rotate(15deg);
+    opacity: 0.9;
+    border: 4px solid white;
+  }
+  
+  .certificate-seal-inner {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    border: 2px dashed rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .certificate-title {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 1rem;
+    position: relative;
+    display: inline-block;
+  }
+  
+  .certificate-title:after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 4px;
+    background: linear-gradient(90deg, #3b82f6, #10b981);
+    border-radius: 2px;
+  }
+  
+  .certificate-subtitle {
+    font-size: 1.5rem;
+    color: #4b5563;
+    margin-bottom: 3rem;
+  }
+  
+  .course-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 2rem;
+    padding: 10px 20px;
+    position: relative;
+    display: inline-block;
+  }
+  
+  .course-title:before, .course-title:after {
+    content: '✦';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #3b82f6;
+    font-size: 1.5rem;
+  }
+  
+  .course-title:before {
+    left: -10px;
+  }
+  
+  .course-title:after {
+    right: -10px;
+  }
+  
+  .student-info {
+    margin-bottom: 3rem;
+  }
+  
+  .student-label {
+    font-size: 1.25rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+  }
+  
+  .student-name {
+    font-size: 2rem;
+    font-weight: 500;
+    color: #1f2937;
+  }
+  
+  .certificate-id-box {
+    display: inline-block;
+    background: linear-gradient(to right, rgba(59, 130, 246, 0.1), rgba(16, 185, 129, 0.1));
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    padding: 15px 30px;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+  }
+  
+  .certificate-id-label {
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+  }
+  
+  .certificate-id-value {
+    font-family: 'Courier New', monospace;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+    letter-spacing: 1px;
+  }
+  
+  .certificate-date {
+    font-size: 1.1rem;
+    color: #6b7280;
+    margin-bottom: 2rem;
+  }
+  
+  .certificate-footer {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 2rem;
+    border-top: 1px solid #e5e7eb;
+    margin-top: 2rem;
+  }
+  
+  .footer-item {
+    text-align: center;
+    flex: 1;
+    padding: 0 20px;
+  }
+  
+  .footer-label {
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+  }
+  
+  .footer-value {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #1f2937;
+    position: relative;
+  }
+  
+  .footer-value:after {
+    content: '';
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 1px;
+    background-color: #9ca3af;
+  }
+  
+  .certificate-corner {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+  }
+  
+  .corner-top-left {
+    top: 0;
+    left: 0;
+    border-top: 4px solid #3b82f6;
+    border-left: 4px solid #3b82f6;
+  }
+  
+  .corner-top-right {
+    top: 0;
+    right: 0;
+    border-top: 4px solid #3b82f6;
+    border-right: 4px solid #3b82f6;
+  }
+  
+  .corner-bottom-left {
+    bottom: 0;
+    left: 0;
+    border-bottom: 4px solid #10b981;
+    border-left: 4px solid #10b981;
+  }
+  
+  .corner-bottom-right {
+    bottom: 0;
+    right: 0;
+    border-bottom: 4px solid #10b981;
+    border-right: 4px solid #10b981;
+  }
+  
+  /* 인쇄 스타일 개선 */
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+    
+    #main-content, #print-certificate, #print-certificate * {
+      visibility: visible;
+    }
+    
+    nav, footer, .hide-on-print {
+      display: none !important;
+    }
+    
+    #print-certificate {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .certificate-container {
+      max-width: 100%;
+    }
+    
+    .certificate-frame {
+      box-shadow: none;
+      margin: 0;
+      padding: 20px;
+      height: 100%;
+      box-sizing: border-box;
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-3xl mx-auto">
-    <div class="mb-4">
+<div class="max-w-5xl mx-auto mb-8">
+    <div class="mb-4 hide-on-print">
         <a href="{% url 'enrollments:my_certificates' %}" class="text-blue-600 hover:underline">
             <span class="inline-flex items-center">
                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -15,45 +282,57 @@
         </a>
     </div>
 
-    <div class="bg-white rounded-lg shadow-md overflow-hidden">
-        <div class="border-b border-gray-200 p-6 text-center">
-            <h1 class="text-3xl font-bold mb-2">수료증</h1>
-            <p class="text-gray-600">이 수료증은 아래 과정의 성공적인 완료를 증명합니다</p>
-        </div>
-        
-        <div class="p-8 text-center">
-            <h2 class="text-2xl font-bold mb-4">{{ certificate.enrollment.course.title }}</h2>
+    <div id="print-certificate" class="certificate-container">
+        <div class="certificate-frame">
+            <!-- 모서리 장식 -->
+            <div class="certificate-corner corner-top-left"></div>
+            <div class="certificate-corner corner-top-right"></div>
+            <div class="certificate-corner corner-bottom-left"></div>
+            <div class="certificate-corner corner-bottom-right"></div>
             
-            <p class="mb-6">
-                <span class="block text-gray-600">수강자</span>
-                <span class="text-xl font-medium">{{ certificate.enrollment.student.username }}</span>
-            </p>
-            
-            <div class="inline-block border-2 border-blue-200 rounded-lg p-4 mb-6">
-                <p class="text-gray-600 mb-1">수료증 ID</p>
-                <p class="font-mono text-lg">{{ certificate.certificate_id }}</p>
+            <!-- 공식 인증 스탬프 -->
+            <div class="certificate-seal">
+                <div class="certificate-seal-inner">
+                    <span>DevRun<br>Dev</span>
+                </div>
             </div>
             
-            <p class="text-gray-600">
-                발급일: {{ certificate.issued_at|date:"Y년 m월 d일" }}
-            </p>
-        </div>
-        
-        <div class="border-t border-gray-200 p-6">
-            <div class="flex justify-between items-center">
-                <div>
-                    <p class="text-gray-600">발급자</p>
-                    <p class="font-medium">DevRunDev 교육 플랫폼</p>
+            <!-- 수료증 내용 -->
+            <div class="certificate-content">
+                <h1 class="certificate-title">수료증</h1>
+                <p class="certificate-subtitle">이 수료증은 아래 과정의 성공적인 완료를 증명합니다</p>
+                
+                <h2 class="course-title">{{ certificate.enrollment.course.title }}</h2>
+                
+                <div class="student-info">
+                    <p class="student-label">수강자</p>
+                    <p class="student-name">{{ certificate.enrollment.student.username }}</p>
                 </div>
-                <div>
-                    <p class="text-gray-600">강사</p>
-                    <p class="font-medium">{{ certificate.enrollment.course.instructor.username }}</p>
+                
+                <div class="certificate-id-box">
+                    <div class="certificate-id-label">수료증 ID</div>
+                    <div class="certificate-id-value">{{ certificate.certificate_id }}</div>
+                </div>
+                
+                <p class="certificate-date">
+                    발급일: {{ certificate.issued_at|date:"Y년 m월 d일" }}
+                </p>
+                
+                <div class="certificate-footer">
+                    <div class="footer-item">
+                        <p class="footer-label">발급자</p>
+                        <p class="footer-value">DevRunDev 교육 플랫폼</p>
+                    </div>
+                    <div class="footer-item">
+                        <p class="footer-label">강사</p>
+                        <p class="footer-value">{{ certificate.enrollment.course.instructor.username }}</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <div class="mt-6 text-center">
+    <div class="mt-8 text-center hide-on-print">
         <button onclick="window.print()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-500 transition-colors">
             인쇄하기
         </button>

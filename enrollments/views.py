@@ -720,6 +720,25 @@ def certificate_view(request, certificate_id=None):
 
 
 @login_required
+def print_certificate_view(request, certificate_id):
+    """인쇄용 수료증 페이지"""
+    # 특정 수료증 조회
+    certificate = get_object_or_404(Certificate, certificate_id=certificate_id)
+
+    # 수료증 소유자 또는 관리자만 접근 가능
+    if certificate.enrollment.student != request.user and not request.user.is_staff:
+        messages.error(request, "해당 수료증에 접근할 권한이 없습니다.")
+        return redirect("enrollments:my_certificates")
+
+    context = {
+        "certificate": certificate,
+        "enrollment": certificate.enrollment,
+        "course": certificate.enrollment.course,
+    }
+    return render(request, "enrollments/certificate_print.html", context)
+
+
+@login_required
 def checkout_free_course(request):
     """무료 강의 체크아웃 뷰"""
     if request.method != "POST":
