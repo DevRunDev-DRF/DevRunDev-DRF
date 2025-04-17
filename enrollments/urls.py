@@ -13,6 +13,7 @@ from .views import (
     PaymentPrepareView,
     PaymentVerifyView,
     PaymentCancelView,
+    checkout_free_course,
 )
 
 router = DefaultRouter()
@@ -36,4 +37,5 @@ urlpatterns = [
     path("payments/prepare/", PaymentPrepareView.as_view(), name="payment-prepare"),
     path("payments/verify/", PaymentVerifyView.as_view(), name="payment-verify"),
     path("payments/cancel/", PaymentCancelView.as_view(), name="payment-cancel"),
+    path("checkout-free/", checkout_free_course, name="checkout-free"),
 ]

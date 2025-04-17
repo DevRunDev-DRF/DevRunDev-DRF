@@ -382,10 +382,6 @@ class QuizAttemptView(LoginRequiredMixin, View):
             messages.error(request, "존재하지 않는 퀴즈입니다.")
             return redirect("quizzes:quiz-list")
 
-    def post(self, request, *args, **kwargs):
-        # 제출 페이지로 리다이렉트 (제출은 QuizSubmitView에서 처리)
-        return redirect("quizzes:quiz-submit", pk=kwargs.get("pk"))
-
 
 class QuizSubmitView(LoginRequiredMixin, View):
     """퀴즈 제출 처리"""

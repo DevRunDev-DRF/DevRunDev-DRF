@@ -377,7 +377,7 @@ class CourseDetailView(DetailView):
         # 수강 여부 확인
         if user.is_authenticated:
             context["is_enrolled"] = Enrollment.objects.filter(
-                student=user, course=course
+                student=user, course=course, status__in=["in_progress", "completed"]
             ).exists()
 
             # 장바구니에 담겨있는지 확인
@@ -395,15 +395,29 @@ class CourseDetailView(DetailView):
 
             # 수강 중인 경우 진행률 정보 추가
             if context["is_enrolled"]:
-                enrollment = Enrollment.objects.get(student=user, course=course)
-                context["enrollment"] = enrollment
+                try:
+                    # 수강 정보 가져오기
+                    enrollment = Enrollment.objects.get(student=user, course=course)
+                    context["enrollment"] = enrollment
 
-                # 완료된 레슨 ID 목록
-                completed_lessons = LessonProgress.objects.filter(
-                    student=user, lesson__section__course=course, completed=True
-                ).values_list("lesson_id", flat=True)
+                    # 완료된 레슨 ID 목록
+                    completed_lessons = LessonProgress.objects.filter(
+                        student=user, lesson__section__course=course, completed=True
+                    ).values_list("lesson_id", flat=True)
 
-                context["completed_lessons"] = completed_lessons
+                    context["completed_lessons"] = list(
+                        completed_lessons
+                    )  # QuerySet을 리스트로 변환
+                except Enrollment.DoesNotExist:
+                    # 이 경우는 있을 수 없지만 안전장치로 추가
+                    context["is_enrolled"] = False
+
+            # 수강 중이거나 강사인 경우 퀴즈 정보 추가
+            if context["is_enrolled"] or user == course.instructor:
+                # 이 강의에 연결된 모든 퀴즈
+                context["quizzes"] = Quiz.objects.filter(course=course)
+
+        return context
 
 
 @method_decorator(login_required, name="dispatch")
@@ -624,6 +638,34 @@ class LessonDetailView(DetailView):
     template_name = "courses/lesson_detail.html"
     context_object_name = "lesson"
 
+    def dispatch(self, request, *args, **kwargs):
+        # 권한 확인을 dispatch 메서드로 이동
+        self.object = self.get_object()
+        lesson = self.object
+
+        # 승인된 강의의 레슨만 조회 가능 (강사 제외)
+        if not request.user.is_authenticated:
+            return redirect("accounts:login")
+
+        # 강사 여부 확인
+        is_instructor = request.user == lesson.section.course.instructor
+
+        # 수강 여부 확인
+        is_enrolled = Enrollment.objects.filter(
+            student=request.user,
+            course=lesson.section.course,
+            status__in=["in_progress", "completed"],
+        ).exists()
+
+        # 수강생 또는 강사가 아닌 경우 접근 제한
+        if not (is_enrolled or is_instructor):
+            messages.error(
+                request, "이 강의를 수강 중인 학생 또는 강사만 접근할 수 있습니다."
+            )
+            return redirect("courses:course-detail", pk=lesson.section.course.id)
+
+        return super().dispatch(request, *args, **kwargs)
+
     def get_queryset(self):
         # 승인된 강의의 레슨만 조회 가능 (강사 제외)
         queryset = Lesson.objects.all()
@@ -637,21 +679,19 @@ class LessonDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        lesson = self.get_object()
+        lesson = self.object
         user = self.request.user
 
-        # 수강 여부 확인
+        # 수강 여부 확인 (이미 dispatch에서 확인했으므로 여기서는 컨텍스트만 설정)
         if user.is_authenticated:
             context["is_enrolled"] = Enrollment.objects.filter(
-                student=user, course=lesson.section.course
+                student=user,
+                course=lesson.section.course,
+                status__in=["in_progress", "completed"],
             ).exists()
 
             # 강사 여부 확인
             context["is_instructor"] = user == lesson.section.course.instructor
-
-            # 수강생 또는 강사가 아닌 경우 접근 제한
-            if not (context["is_enrolled"] or context["is_instructor"]):
-                return redirect("courses:course-detail", pk=lesson.section.course.id)
 
             # 레슨 진행 상태 확인
             if context["is_enrolled"]:
