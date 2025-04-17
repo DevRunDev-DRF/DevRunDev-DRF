@@ -35,7 +35,10 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthenticated]  # 권한 클래스 추가
+    permission_classes = [
+        permissions.IsAuthenticated,
+        IsReviewOwnerOrReadOnly,
+    ]  # 권한 클래스 추가
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ["comment"]
     ordering_fields = ["created_at", "rating"]
@@ -104,6 +107,13 @@ class ReviewViewSet(viewsets.ModelViewSet):
         # 리뷰 삭제 후 평균 평점 업데이트
         course.update_avg_rating()
 
+    def perform_create(self, serializer):
+        # 사용자 ID 설정
+        serializer.save(user=self.request.user)
+        # 강의 평점 업데이트
+        course = serializer.validated_data["course"]
+        course.update_avg_rating()
+
 
 @login_required
 def review_edit_view(request, review_id):
@@ -153,7 +163,7 @@ def review_delete_view(request, review_id):
     user = request.user
 
     # 권한 확인 - 자신의 리뷰만 삭제 가능
-    if review.user != user:
+    if review.user != request.user:
         if "HX-Request" in request.headers:
             return HttpResponse("권한이 없습니다.", status=403)
         messages.error(request, "자신의 리뷰만 삭제할 수 있습니다.")
