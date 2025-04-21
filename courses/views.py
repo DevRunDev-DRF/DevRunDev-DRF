@@ -458,12 +458,26 @@ class CourseUpdateView(UpdateView):
     template_name = "courses/course_form.html"
 
     def get_queryset(self):
-        # 본인의 강의만 수정 가능
         return Course.objects.filter(instructor=self.request.user)
 
     def get_success_url(self):
         messages.success(self.request, "강의가 수정되었습니다.")
         return reverse("courses:course-detail", kwargs={"pk": self.object.pk})
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        # 관리자가 아닌 경우, 상태 변경 시도 시 원래 상태로 되돌림
+        if not (
+            self.request.user.is_staff
+            or self.request.user.role == self.request.user.Role.MANAGER
+        ):
+            if self.object:  # 기존 객체가 있는 경우 (수정 시)
+                form.instance.status = self.object.status
+        return super().form_valid(form)
 
 
 @method_decorator(login_required, name="dispatch")

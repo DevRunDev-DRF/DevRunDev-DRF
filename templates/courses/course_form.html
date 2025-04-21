@@ -78,15 +78,27 @@
             </div>
             
             {% if course.id %}
-                <div>
-                    <label for="id_status" class="block text-gray-700 font-medium mb-2">상태</label>
-                    <select name="status" id="id_status" 
-                            class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="review" {% if course.status == 'review' %}selected{% endif %}>심사 중</option>
-                        <option value="approved" {% if course.status == 'approved' %}selected{% endif %}>승인 완료</option>
-                        <option value="not_approved" {% if course.status == 'not_approved' %}selected{% endif %}>수정 필요</option>
-                    </select>
-                </div>
+                <!-- 관리자만 상태 필드를 볼 수 있음 -->
+                {% if user.is_staff or user.role == user.Role.MANAGER %}
+                    <div>
+                        <label for="id_status" class="block text-gray-700 font-medium mb-2">상태</label>
+                        <select name="status" id="id_status" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="review" {% if course.status == 'review' %}selected{% endif %}>심사 중</option>
+                            <option value="approved" {% if course.status == 'approved' %}selected{% endif %}>승인 완료</option>
+                            <option value="not_approved" {% if course.status == 'not_approved' %}selected{% endif %}>수정 필요</option>
+                        </select>
+                    </div>
+                {% else %}
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">현재 상태</label>
+                        <div class="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50 text-gray-700">
+                            {{ course.get_status_display }}
+                            <input type="hidden" name="status" value="{{ course.status }}">
+                        </div>
+                        <p class="text-sm text-gray-500 mt-1">강의 상태는 관리자에 의해 관리됩니다.</p>
+                    </div>
+                {% endif %}
             {% endif %}
             
             <div class="flex justify-between">

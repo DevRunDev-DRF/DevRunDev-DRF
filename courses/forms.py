@@ -37,10 +37,20 @@ class CourseForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user", None)  # 사용자 객체 가져오기
         super().__init__(*args, **kwargs)
+
         # 새 강의 생성 시 상태 필드 제외
         if not self.instance.pk:
             self.fields.pop("status")
+        # 기존 강의 수정 시, 관리자나 매니저가 아니면 상태 필드 읽기 전용으로 설정
+        elif self.user and not (
+            self.user.is_staff
+            or getattr(self.user, "role", None)
+            == getattr(self.user, "Role.MANAGER", None)
+        ):
+            # 필드를 읽기 전용으로 만들지만, 템플릿에서 처리하므로 여기서는 아무 작업도 하지 않음
+            pass
 
 
 class SectionForm(forms.ModelForm):
