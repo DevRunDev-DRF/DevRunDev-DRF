@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load custom_filters %}
+{% load humanize %}
 
 {% block title %}강사 대시보드 - DevRunDev{% endblock %}
 
@@ -38,8 +40,8 @@
             <a href="{% url 'courses:course-create' %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors">
                 새 강의 만들기
             </a>
-            <a href="{% url 'quizzes:quiz-create' %}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-500 transition-colors">
-                새 퀴즈 만들기
+            <a href="{% url 'courses:course-create-with-content' %}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-500 transition-colors">
+                강의 통합 생성
             </a>
         </div>
     </div>
@@ -91,7 +93,11 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
                     </svg>
-                    이번 달 신규 5명
+                    {% if student_months_data %}
+                    최근 한 달 신규 {{ student_months_data|last }}명
+                    {% else %}
+                    신규 학생 없음
+                    {% endif %}
                 </span>
             </div>
         </div>
@@ -120,7 +126,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h2 class="text-lg font-bold text-gray-700 mb-2">총 수익</h2>
-                    <p class="text-3xl font-bold text-blue-600">₩ 1,250,000</p>
+                    <p class="text-3xl font-bold text-blue-600">₩ {{ total_earnings|default:"0"|intcomma }}</p>
                 </div>
                 <div class="w-12 h-12 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -133,7 +139,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
                     </svg>
-                    이번 달 ₩250,000
+                    이번 달 ₩{{ monthly_earnings|default:"0"|intcomma }}
                 </span>
             </div>
         </div>
@@ -186,10 +192,9 @@
                     </select>
                     
                     <select id="sortBy" class="border border-gray-300 rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="-created_at">최신순</option>
-                        <option value="title">제목순</option>
-                        <option value="-avg_rating">평점순</option>
-                        <option value="-enrollments">수강생순</option>
+                        <option value="-created_at" {% if request.GET.ordering == '-created_at' or not request.GET.ordering %}selected{% endif %}>최신순</option>
+                        <option value="title" {% if request.GET.ordering == 'title' %}selected{% endif %}>제목순</option>
+                        <option value="-avg_rating" {% if request.GET.ordering == '-avg_rating' %}selected{% endif %}>평점순</option>
                     </select>
                     
                     <button id="applyFilters" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-500">
@@ -285,6 +290,46 @@
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- 페이지네이션 -->
+                {% if is_paginated %}
+                <div class="my-6 flex justify-center">
+                    <div class="flex space-x-1">
+                        {% if page_obj.has_previous %}
+                            <a href="?tab=courses&page=1{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.ordering %}&ordering={{ request.GET.ordering }}{% endif %}" 
+                               class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                                &laquo; 처음
+                            </a>
+                            <a href="?tab=courses&page={{ page_obj.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.ordering %}&ordering={{ request.GET.ordering }}{% endif %}" 
+                               class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                                이전
+                            </a>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <span class="px-3 py-2 bg-blue-600 text-white rounded">{{ num }}</span>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <a href="?tab=courses&page={{ num }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.ordering %}&ordering={{ request.GET.ordering }}{% endif %}" 
+                                   class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                                    {{ num }}
+                                </a>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <a href="?tab=courses&page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.ordering %}&ordering={{ request.GET.ordering }}{% endif %}" 
+                               class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                                다음
+                            </a>
+                            <a href="?tab=courses&page={{ page_obj.paginator.num_pages }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.ordering %}&ordering={{ request.GET.ordering }}{% endif %}" 
+                               class="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                                마지막 &raquo;
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
             {% else %}
                 <div class="text-center py-8">
                     <p class="text-gray-500 mb-4">아직 등록한 강의가 없습니다.</p>
@@ -331,21 +376,10 @@
                                 
                                 <div class="text-xs text-gray-500">
                                     {{ review.created_at|date:"Y년 m월 d일" }}
-                                    <div class="mt-1">
-                                        <button class="text-blue-600 hover:underline">
-                                            답변
-                                        </button>
-                                    </div>
                                 </div>
                             </div>
                         </div>
                     {% endfor %}
-                </div>
-                
-                <div class="mt-4 flex justify-center">
-                    <a href="#" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500 transition-colors">
-                        모든 리뷰 보기
-                    </a>
                 </div>
             {% else %}
                 <p class="text-gray-500 text-center py-6">아직 리뷰가 없습니다.</p>
@@ -357,10 +391,11 @@
             <h2 class="text-xl font-bold mb-6">학생 관리</h2>
             
             <div class="mb-6">
-                <input type="text" placeholder="이름 또는 이메일로 학생 검색" 
+                <input type="text" placeholder="이름 또는 이메일로 학생 검색" id="studentSearch"
                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
             
+            {% if students_data %}
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
@@ -377,76 +412,52 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 최근 활동
                             </th>
-                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                액션
-                            </th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                        <!-- 샘플 학생 데이터 -->
-                        <tr>
+                        {% for student_data in students_data %}
+                        <tr class="student-row">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                                        <span class="text-gray-500 font-medium">홍</span>
+                                        <span class="text-gray-500 font-medium">{{ student_data.student.username|first|upper }}</span>
                                     </div>
                                     <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">홍길동</div>
-                                        <div class="text-sm text-gray-500">student1@example.com</div>
+                                        <div class="text-sm font-medium text-gray-900">{{ student_data.student.username }}</div>
+                                        <div class="text-sm text-gray-500">{{ student_data.student.email }}</div>
                                     </div>
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">2개 강의</div>
-                                <div class="text-xs text-gray-500">파이썬 프로그래밍 기초, HTML/CSS 웹개발</div>
+                                <div class="text-sm text-gray-900">{{ student_data.courses_count }}개 강의</div>
+                                <div class="text-xs text-gray-500">
+                                    {% for course in student_data.enrolled_courses|slice:":2" %}
+                                    {{ course.title }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                    {% if student_data.enrolled_courses.count > 2 %}외 {{ student_data.enrolled_courses.count|add:"-2" }}개{% endif %}
+                                </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="w-full bg-gray-200 rounded-full h-2.5">
-                                    <div class="bg-blue-600 h-2.5 rounded-full" style="width: 75%"></div>
+                                    <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ student_data.avg_progress }}%"></div>
                                 </div>
-                                <div class="text-xs text-gray-500 mt-1">75% 완료</div>
+                                <div class="text-xs text-gray-500 mt-1">{{ student_data.avg_progress|floatformat:0 }}% 완료</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                오늘 10:23
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button class="text-blue-600 hover:text-blue-900 mr-2">메시지</button>
-                                <button class="text-gray-600 hover:text-gray-900">자세히</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                                        <span class="text-gray-500 font-medium">김</span>
-                                    </div>
-                                    <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">김철수</div>
-                                        <div class="text-sm text-gray-500">student2@example.com</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">1개 강의</div>
-                                <div class="text-xs text-gray-500">실전 JavaScript 프로그래밍</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="w-full bg-gray-200 rounded-full h-2.5">
-                                    <div class="bg-blue-600 h-2.5 rounded-full" style="width: 45%"></div>
-                                </div>
-                                <div class="text-xs text-gray-500 mt-1">45% 완료</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                어제 16:45
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button class="text-blue-600 hover:text-blue-900 mr-2">메시지</button>
-                                <button class="text-gray-600 hover:text-gray-900">자세히</button>
+                                {% if student_data.last_activity %}
+                                {{ student_data.last_activity|date:"Y년 m월 d일 H:i" }}
+                                {% else %}
+                                활동 없음
+                                {% endif %}
                             </td>
                         </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
+            {% else %}
+            <p class="text-gray-500 text-center py-6">아직 수강생이 없습니다.</p>
+            {% endif %}
         </div>
     {% elif request.GET.tab == 'earnings' %}
         <!-- 수익 분석 탭 -->
@@ -456,18 +467,18 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div class="p-4 border border-gray-200 rounded-lg">
                     <h3 class="text-sm text-gray-500 mb-1">이번 달 수익</h3>
-                    <p class="text-2xl font-bold">₩ 250,000</p>
-                    <p class="text-xs text-green-600 mt-1">지난 달 대비 15% ↑</p>
+                    <p class="text-2xl font-bold">₩ {{ monthly_earnings|default:"0"|intcomma }}</p>
+                    <p class="text-xs text-green-600 mt-1">전월 대비 업데이트 예정</p>
                 </div>
                 <div class="p-4 border border-gray-200 rounded-lg">
                     <h3 class="text-sm text-gray-500 mb-1">올해 총 수익</h3>
-                    <p class="text-2xl font-bold">₩ 1,250,000</p>
-                    <p class="text-xs text-green-600 mt-1">작년 대비 45% ↑</p>
+                    <p class="text-2xl font-bold">₩ {{ total_earnings|default:"0"|intcomma }}</p>
+                    <p class="text-xs text-green-600 mt-1">작년 대비 업데이트 예정</p>
                 </div>
                 <div class="p-4 border border-gray-200 rounded-lg">
                     <h3 class="text-sm text-gray-500 mb-1">다음 정산 예정</h3>
-                    <p class="text-2xl font-bold">₩ 125,000</p>
-                    <p class="text-xs text-gray-500 mt-1">2025년 5월 15일</p>
+                    <p class="text-2xl font-bold">₩ {{ monthly_earnings|default:"0"|intcomma }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ today|date:"Y년 m월 15일" }}</p>
                 </div>
             </div>
             
@@ -478,6 +489,7 @@
             
             <div class="mb-6">
                 <h3 class="text-lg font-medium mb-2">강의별 수익</h3>
+                {% if course_earnings %}
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
@@ -500,61 +512,31 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            <!-- 샘플 강의 수익 데이터 -->
+                            {% for item in course_earnings %}
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <a href="#" class="text-blue-600 hover:underline">파이썬 프로그래밍 기초</a>
+                                    <a href="{% url 'courses:course-detail' item.course.id %}" class="text-blue-600 hover:underline">{{ item.course.title }}</a>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    ₩ 49,900
+                                    ₩ {{ item.price|intcomma }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    12명
+                                    {{ item.students_count }}명
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    ₩ 598,800
+                                    ₩ {{ item.total_earned|intcomma }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    ₩ 149,700 (이번 달)
+                                    ₩ {{ item.monthly_earned|intcomma }} (이번 달)
                                 </td>
                             </tr>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <a href="#" class="text-blue-600 hover:underline">HTML과 CSS로 시작하는 웹개발</a>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    ₩ 39,900
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    8명
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    ₩ 319,200
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    ₩ 79,800 (이번 달)
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <a href="#" class="text-blue-600 hover:underline">실전 JavaScript 프로그래밍</a>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    ₩ 59,900
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    5명
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    ₩ 299,500
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    ₩ 59,900 (이번 달)
-                                </td>
-                            </tr>
+                            {% endfor %}
                         </tbody>
                     </table>
                 </div>
+                {% else %}
+                <p class="text-gray-500 text-center py-6">수익 데이터가 없습니다.</p>
+                {% endif %}
             </div>
         </div>
     {% endif %}
@@ -563,7 +545,6 @@
 
 {% block extra_js %}
 <script>
-    // 학생 통계 차트
     document.addEventListener('DOMContentLoaded', function() {
         // Chart.js가 로드되었는지 확인
         if (typeof Chart === 'undefined') {
@@ -583,10 +564,10 @@
                 window.studentsChart = new Chart(studentsCtx, {
                     type: 'line',
                     data: {
-                        labels: ['1월', '2월', '3월', '4월', '5월', '6월'],
+                        labels: [{% for label in student_months_labels %}'{{ label }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
                         datasets: [{
                             label: '신규 수강생',
-                            data: [5, 8, 12, 7, 15, 10],
+                            data: [{% for data_point in student_months_data %}{{ data_point }}{% if not forloop.last %}, {% endif %}{% endfor %}],
                             borderColor: '#3b82f6',
                             backgroundColor: 'rgba(59, 130, 246, 0.1)',
                             tension: 0.2,
@@ -620,11 +601,17 @@
                 window.completionChart = new Chart(completionCtx, {
                     type: 'bar',
                     data: {
-                        labels: ['파이썬 기초', 'HTML/CSS 웹개발', 'JavaScript 프로그래밍'],
+                        labels: [{% for name in course_names %}'{{ name }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
                         datasets: [{
                             label: '완료율',
-                            data: [75, 60, 45],
-                            backgroundColor: ['#3b82f6', '#4ade80', '#f59e0b'],
+                            data: [{% for rate in completion_rates %}{{ rate }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                            backgroundColor: [
+                                '#3b82f6', 
+                                '#4ade80', 
+                                '#f59e0b', 
+                                '#ec4899', 
+                                '#8b5cf6'
+                            ],
                             borderWidth: 0
                         }]
                     },
@@ -654,7 +641,7 @@
             }
         }
         
-        // 수익 차트도 같은 방식으로 수정
+        // 수익 차트
         const earningsCtx = document.getElementById('earningsChart');
         if (earningsCtx) {
             try {
@@ -665,10 +652,10 @@
                 window.earningsChart = new Chart(earningsCtx, {
                     type: 'line',
                     data: {
-                        labels: ['1월', '2월', '3월', '4월', '5월', '6월'],
+                        labels: [{% for month in earnings_months %}'{{ month }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
                         datasets: [{
                             label: '월별 수익',
-                            data: [150000, 180000, 210000, 190000, 220000, 250000],
+                            data: [{% for amount in earnings_data %}{{ amount }}{% if not forloop.last %}, {% endif %}{% endfor %}],
                             borderColor: '#10b981',
                             backgroundColor: 'rgba(16, 185, 129, 0.1)',
                             tension: 0.2,
@@ -700,43 +687,6 @@
         }
     });
 
-    // 수익 차트
-    const earningsCtx = document.getElementById('earningsChart');
-    if (earningsCtx) {
-        new Chart(earningsCtx, {
-            type: 'line',
-            data: {
-                labels: ['1월', '2월', '3월', '4월', '5월', '6월'],
-                datasets: [{
-                    label: '월별 수익',
-                    data: [150000, 180000, 210000, 190000, 220000, 250000],
-                    borderColor: '#10b981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    tension: 0.2,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    },
-                },
-                scales: {
-                    y: {
-                        ticks: {
-                            callback: function(value) {
-                                return '₩ ' + value.toLocaleString();
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-
     // 필터 적용 버튼
     const applyFiltersBtn = document.getElementById('applyFilters');
     if (applyFiltersBtn) {
@@ -754,6 +704,26 @@
             }
             
             window.location.href = url;
+        });
+    }
+    
+    // 학생 검색 기능
+    const studentSearch = document.getElementById('studentSearch');
+    if (studentSearch) {
+        studentSearch.addEventListener('input', function() {
+            const searchText = this.value.toLowerCase();
+            const studentRows = document.querySelectorAll('.student-row');
+            
+            studentRows.forEach(row => {
+                const studentName = row.querySelector('.text-gray-900').textContent.toLowerCase();
+                const studentEmail = row.querySelector('.text-gray-500').textContent.toLowerCase();
+                
+                if (studentName.includes(searchText) || studentEmail.includes(searchText)) {
+                    row.style.display = 'table-row';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
         });
     }
 </script>

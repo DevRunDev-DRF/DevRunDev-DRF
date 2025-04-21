@@ -35,13 +35,14 @@ class EnrollmentAdmin(admin.ModelAdmin):
         elif progress < 70:
             color = "orange"
 
+        progress_str = f"{progress:.1f}"
         return format_html(
             '<div style="width:100px; height:10px; background-color:#f2f2f2; border-radius:5px;">'
             '<div style="width:{}px; height:10px; background-color:{}; border-radius:5px;"></div>'
-            "</div> {:.1f}%",
+            "</div> {}%",
             progress,
             color,
-            progress,
+            progress_str,
         )
 
     get_progress_bar.short_description = "진행률"
