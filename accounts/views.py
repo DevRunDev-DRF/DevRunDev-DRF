@@ -1,13 +1,14 @@
-from rest_framework import viewsets, permissions, status, generics
+from rest_framework import viewsets, permissions, status, generics, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
-from django.contrib.auth import logout
+from django.contrib.auth import logout, login as django_login
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.contrib import messages
 from enrollments.models import Enrollment
 
 from drf_yasg.utils import swagger_auto_schema
@@ -217,13 +218,35 @@ class LogoutView(APIView):
         },
     )
     def post(self, request):
-        # 토큰 삭제
-        request.user.auth_token.delete()
+        # 토큰 삭제 (토큰이 있는 경우에만)
+        if hasattr(request.user, "auth_token"):
+            request.user.auth_token.delete()
 
-        # 세션 기반 로그아웃 (선택사항)
+        # 세션 기반 로그아웃
         logout(request)
 
-        return Response({"message": "로그아웃 되었습니다."}, status=status.HTTP_200_OK)
+        # API 요청인 경우 JSON 응답 반환
+        if request.accepted_renderer.format == "json":
+            return Response(
+                {"message": "로그아웃 되었습니다."}, status=status.HTTP_200_OK
+            )
+
+        # 웹 페이지 요청인 경우 홈페이지로 리다이렉트
+        messages.success(request, "로그아웃 되었습니다.")
+        return redirect("home")
+
+    # GET 메서드 추가 (웹 브라우저에서 링크 클릭으로 로그아웃할 수 있도록)
+    def get(self, request):
+        # 토큰 삭제 (토큰이 있는 경우에만)
+        if hasattr(request.user, "auth_token"):
+            request.user.auth_token.delete()
+
+        # 세션 기반 로그아웃
+        logout(request)
+
+        # 성공 메시지 추가하고 홈페이지로 리다이렉트
+        messages.success(request, "로그아웃 되었습니다.")
+        return redirect("home")
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -371,18 +394,16 @@ class InstructorApplicationViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         # 사용자가 이미 강사인 경우
         if self.request.user.is_instructor():
-            return Response(
-                {"detail": "이미 강사 권한을 가지고 있습니다."},
-                status=status.HTTP_400_BAD_REQUEST,
+            raise serializers.ValidationError(
+                {"detail": "이미 강사 권한을 가지고 있습니다."}
             )
 
         # 대기 중인 신청이 있는 경우
         if InstructorApplication.objects.filter(
             user=self.request.user, status=InstructorApplication.Status.PENDING
         ).exists():
-            return Response(
-                {"detail": "이미 강사 신청이 진행 중입니다."},
-                status=status.HTTP_400_BAD_REQUEST,
+            raise serializers.ValidationError(
+                {"detail": "이미 강사 신청이 진행 중입니다."}
             )
 
         serializer.save(user=self.request.user)
