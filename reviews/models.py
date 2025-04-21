@@ -36,7 +36,5 @@ class Review(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        # 리뷰 저장 시 강의의 평균 평점 업데이트
-        # 여기서는 호출만 하고 실제 구현은 Course 모델에서 처리
-        # 이렇게 하면 circular import 문제 방지
+
         self.course.update_avg_rating()

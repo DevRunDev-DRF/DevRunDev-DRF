@@ -37,11 +37,8 @@
         <h1 class="text-2xl font-bold">강사 대시보드</h1>
         
         <div class="flex space-x-3">
-            <a href="{% url 'courses:course-create' %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors">
-                새 강의 만들기
-            </a>
-            <a href="{% url 'courses:course-create-with-content' %}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-500 transition-colors">
-                강의 통합 생성
+            <a href="{% url 'courses:course-create-with-content' %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors">
+                강의 생성
             </a>
         </div>
     </div>
@@ -281,8 +278,13 @@
                                         <a href="{% url 'courses:course-edit' course.id %}" class="text-blue-600 hover:underline mr-3">
                                             수정
                                         </a>
-                                        <a href="{% url 'courses:course-detail' course.id %}" class="text-gray-600 hover:underline">
+                                        <a href="{% url 'courses:course-detail' course.id %}" class="text-gray-600 hover:underline mr-3">
                                             보기
+                                        </a>
+                                        <a href="#" 
+                                        onclick="confirmDelete({{ course.id }}, '{{ course.title|escapejs }}'); return false;" 
+                                        class="text-red-600 hover:underline mr-3">
+                                            삭제
                                         </a>
                                     </td>
                                 </tr>
@@ -545,6 +547,26 @@
 
 {% block extra_js %}
 <script>
+    // 강의 삭제 확인 함수 (전역 스코프에 정의)
+    window.confirmDelete = function(courseId, courseTitle) {
+        if (confirm(`정말로 "${courseTitle}" 강의를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없으며, 모든 강의 데이터가 영구적으로 삭제됩니다.`)) {
+            // 삭제 요청을 위한 폼 생성 및 제출
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/courses/${courseId}/delete/`;
+            
+            // CSRF 토큰 추가
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = '{{ csrf_token }}';
+            form.appendChild(csrfInput);
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    };
+
     document.addEventListener('DOMContentLoaded', function() {
         // Chart.js가 로드되었는지 확인
         if (typeof Chart === 'undefined') {

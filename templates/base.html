@@ -37,14 +37,13 @@
                             <a href="{% url 'accounts:profile' %}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">프로필</a>
                             
                             {% if user.is_instructor %}
-                                <!-- 강사 대시보드 링크 수정 - 실제 URL 패턴에 맞게 조정 필요 -->
-                                <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">강사 대시보드</a>
+                                <a href="{% url 'courses:instructor-dashboard' %}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">강사 대시보드</a>
                             {% endif %}
                             
                             {% if user.is_student %}
                                 <!-- 내 강의, 내 수료증 링크 수정 - 실제 URL 패턴에 맞게 조정 필요 -->
-                                <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">내 강의</a>
-                                <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">내 수료증</a>
+                                <a href="{% url 'enrollments:my_courses' %}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">내 강의</a>
+                                <a href="{% url 'enrollments:my_certificates' %}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">내 수료증</a>
                             {% endif %}
                             
                             <a href="{% url 'accounts:logout' %}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">로그아웃</a>

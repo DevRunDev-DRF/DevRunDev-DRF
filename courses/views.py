@@ -35,6 +35,7 @@ from .serializers import (
 )
 from .forms import CourseForm, SectionForm, LessonForm
 from django.db import models
+from accounts.models import User
 from django.utils import timezone
 
 
@@ -477,11 +478,37 @@ class CourseDeleteView(DeleteView):
 
     def get_success_url(self):
         messages.success(self.request, "강의가 삭제되었습니다.")
+
+        # 삭제 후 강사 대시보드로 리다이렉트
+        if (
+            "HTTP_REFERER" in self.request.META
+            and "instructor-dashboard" in self.request.META["HTTP_REFERER"]
+        ):
+            return reverse("courses:instructor-dashboard")
+
+        # 기본값은 강의 목록
         return reverse("courses:course-list")
 
-    # GET 요청으로 접근하면 상세 페이지로 리다이렉트
-    def get(self, request, *args, **kwargs):
-        return redirect("courses:course-detail", pk=kwargs.get("pk"))
+    # POST 요청으로 처리 (폼 없이 바로 삭제)
+    def post(self, request, *args, **kwargs):
+        try:
+            course = self.get_object()
+            course_title = course.title
+            course.delete()
+            messages.success(request, f"'{course_title}' 강의가 삭제되었습니다.")
+
+            # 강사 대시보드에서 삭제한 경우 대시보드로 리다이렉트
+            if (
+                "HTTP_REFERER" in request.META
+                and "instructor-dashboard" in request.META["HTTP_REFERER"]
+            ):
+                return redirect("courses:instructor-dashboard")
+
+            # 아니면 강의 목록으로 리다이렉트
+            return redirect("courses:instructor-dashboard")
+        except Exception as e:
+            messages.error(request, f"강의 삭제 중 오류가 발생했습니다: {str(e)}")
+            return redirect("courses:instructor-dashboard")
 
 
 @method_decorator(login_required, name="dispatch")

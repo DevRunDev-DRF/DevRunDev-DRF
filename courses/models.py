@@ -28,35 +28,31 @@ class Course(models.Model):
     )
 
     def update_avg_rating(self):
-        """리뷰 점수의 평균을 계산하여 업데이트하는 메서드"""
         from django.db.models import Avg
 
-        # 디버깅을 위한 로그 추가
-        print(f"Updating avg_rating for course {self.id}")
-
-        # 모든 리뷰 확인
+        # 평균 계산
         reviews = self.reviews.all()
-        print(f"Reviews count: {reviews.count()}")
-        for review in reviews:
-            print(
-                f"Review ID: {review.id}, Rating: {review.rating}, User: {review.user.username}"
-            )
 
-        # 평균 계산 (반올림 없이)
-        avg = self.reviews.aggregate(avg_rating=Avg("rating"))["avg_rating"]
-        print(f"Calculated average: {avg}")
+        print(f"Course ID {self.id}: {self.title} - Reviews count: {reviews.count()}")
 
-        # 결과가 None이 아닌 경우에만 업데이트
-        if avg is not None:
-            self.avg_rating = avg
+        if reviews.exists():
+            # 각 리뷰의 평점 출력
+            ratings = [review.rating for review in reviews]
+            print(f"  Ratings: {ratings}")
+
+            # 명시적으로 Python에서 평균 계산
+            total_rating = sum(ratings)
+            avg = total_rating / len(ratings)
+            self.avg_rating = float(avg)  # float 타입으로 명시적 변환
+            print(f"  Calculated average: {self.avg_rating}")
         else:
             self.avg_rating = 0.0
+            print(f"  No reviews, setting average to 0.0")
 
-        # 디버깅을 위한 로그 추가
-        print(f"Final avg_rating: {self.avg_rating}")
+        # 직접 부모 클래스의 save 메서드 호출하여 무한 재귀 방지
+        models.Model.save(self, update_fields=["avg_rating"])
 
-        # save 메서드가 다시 update_avg_rating을 호출하지 않도록 주의
-        super(Course, self).save(update_fields=["avg_rating"])
+        return self.avg_rating
 
     def get_thumbnail_url(self):
         """썸네일 파일이 존재하지 않으면 기본 썸네일 반환"""
