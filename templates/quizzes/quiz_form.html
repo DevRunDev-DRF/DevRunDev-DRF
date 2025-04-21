@@ -108,82 +108,112 @@
 
 {% block extra_js %}
 <script>
-    // 강의 선택 시 섹션 목록 가져오기
-    document.getElementById('id_course').addEventListener('change', function() {
-        const courseId = this.value;
+    document.addEventListener('DOMContentLoaded', function() {
+        // 강의 선택 시 섹션 목록 가져오기
+        const courseSelect = document.getElementById('id_course');
         const sectionsContainer = document.getElementById('sectionsContainer');
         const sectionsSelect = document.getElementById('id_section');
         const lessonsContainer = document.getElementById('lessonsContainer');
-        
-        if (courseId) {
-            // 섹션 선택 표시
-            sectionsContainer.classList.remove('hidden');
-            
-            // 섹션 데이터 가져오기 (AJAX 요청)
-            fetch(`/api/sections/?course_id=${courseId}`)
-                .then(response => response.json())
-                .then(data => {
-                    // 기존 옵션 제거
-                    sectionsSelect.innerHTML = '<option value="">-- 섹션 선택 --</option>';
-                    
-                    // 새 섹션 옵션 추가
-                    if (data.results && data.results.length > 0) {
-                        data.results.forEach(section => {
-                            const option = document.createElement('option');
-                            option.value = section.id;
-                            option.textContent = section.title;
-                            sectionsSelect.appendChild(option);
-                        });
-                    }
-                })
-                .catch(error => console.error('섹션 데이터 가져오기 오류:', error));
-            
-            // 레슨 선택 숨기기
-            lessonsContainer.classList.add('hidden');
-            document.getElementById('id_lesson').innerHTML = '<option value="">-- 레슨 선택 --</option>';
-        } else {
-            // 모두 숨기기
-            sectionsContainer.classList.add('hidden');
-            lessonsContainer.classList.add('hidden');
-            
-            // 옵션 초기화
-            sectionsSelect.innerHTML = '<option value="">-- 섹션 선택 --</option>';
-            document.getElementById('id_lesson').innerHTML = '<option value="">-- 레슨 선택 --</option>';
-        }
-    });
-    
-    // 섹션 선택 시 레슨 목록 가져오기
-    document.getElementById('id_section').addEventListener('change', function() {
-        const sectionId = this.value;
-        const lessonsContainer = document.getElementById('lessonsContainer');
         const lessonsSelect = document.getElementById('id_lesson');
         
-        if (sectionId) {
-            // 레슨 선택 표시
-            lessonsContainer.classList.remove('hidden');
-            
-            // 레슨 데이터 가져오기 (AJAX 요청)
-            fetch(`/api/lessons/?section_id=${sectionId}`)
-                .then(response => response.json())
-                .then(data => {
-                    // 기존 옵션 제거
-                    lessonsSelect.innerHTML = '<option value="">-- 레슨 선택 --</option>';
+        if (courseSelect) {
+            courseSelect.addEventListener('change', function() {
+                const courseId = this.value;
+                
+                if (courseId) {
+                    // 섹션 선택 표시
+                    sectionsContainer.classList.remove('hidden');
                     
-                    // 새 레슨 옵션 추가
-                    if (data.results && data.results.length > 0) {
-                        data.results.forEach(lesson => {
-                            const option = document.createElement('option');
-                            option.value = lesson.id;
-                            option.textContent = lesson.title;
-                            lessonsSelect.appendChild(option);
-                        });
-                    }
-                })
-                .catch(error => console.error('레슨 데이터 가져오기 오류:', error));
-        } else {
-            // 레슨 선택 숨기기
-            lessonsContainer.classList.add('hidden');
-            lessonsSelect.innerHTML = '<option value="">-- 레슨 선택 --</option>';
+                    // 섹션 데이터 가져오기 (AJAX 요청)
+                    fetch(`/api/sections/?course_id=${courseId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            // 기존 옵션 제거
+                            sectionsSelect.innerHTML = '<option value="">-- 섹션 선택 --</option>';
+                            
+                            // 새 섹션 옵션 추가
+                            if (data.results && data.results.length > 0) {
+                                data.results.forEach(section => {
+                                    const option = document.createElement('option');
+                                    option.value = section.id;
+                                    option.textContent = section.title;
+                                    sectionsSelect.appendChild(option);
+                                });
+                            }
+                        })
+                        .catch(error => console.error('섹션 데이터 가져오기 오류:', error));
+                    
+                    // 레슨 선택 숨기기
+                    lessonsContainer.classList.add('hidden');
+                    lessonsSelect.innerHTML = '<option value="">-- 레슨 선택 --</option>';
+                } else {
+                    // 모두 숨기기
+                    sectionsContainer.classList.add('hidden');
+                    lessonsContainer.classList.add('hidden');
+                    
+                    // 옵션 초기화
+                    sectionsSelect.innerHTML = '<option value="">-- 섹션 선택 --</option>';
+                    lessonsSelect.innerHTML = '<option value="">-- 레슨 선택 --</option>';
+                }
+            });
+        }
+        
+        // 섹션 선택 시 레슨 목록 가져오기
+        if (sectionsSelect) {
+            sectionsSelect.addEventListener('change', function() {
+                const sectionId = this.value;
+                
+                if (sectionId) {
+                    // 레슨 선택 표시
+                    lessonsContainer.classList.remove('hidden');
+                    
+                    // 레슨 데이터 가져오기 (AJAX 요청)
+                    fetch(`/api/lessons/?section_id=${sectionId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            // 기존 옵션 제거
+                            lessonsSelect.innerHTML = '<option value="">-- 레슨 선택 --</option>';
+                            
+                            // 새 레슨 옵션 추가
+                            if (data.results && data.results.length > 0) {
+                                data.results.forEach(lesson => {
+                                    const option = document.createElement('option');
+                                    option.value = lesson.id;
+                                    option.textContent = lesson.title;
+                                    lessonsSelect.appendChild(option);
+                                });
+                            }
+                        })
+                        .catch(error => console.error('레슨 데이터 가져오기 오류:', error));
+                } else {
+                    // 레슨 선택 숨기기
+                    lessonsContainer.classList.add('hidden');
+                    lessonsSelect.innerHTML = '<option value="">-- 레슨 선택 --</option>';
+                }
+            });
+        }
+        
+        // 폼 제출 전 간단한 유효성 검사
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const title = document.getElementById('id_title').value.trim();
+                const course = document.getElementById('id_course').value;
+                
+                if (!title) {
+                    e.preventDefault();
+                    alert('퀴즈 제목을 입력해주세요.');
+                    return false;
+                }
+                
+                if (!course) {
+                    e.preventDefault();
+                    alert('강의를 선택해주세요.');
+                    return false;
+                }
+                
+                return true;
+            });
         }
     });
 </script>

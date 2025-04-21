@@ -20,7 +20,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 
-from courses.models import Course
+from courses.models import Course, Section, Lesson
 from .models import Quiz, Question, Choice, QuizAttempt, Answer
 from .serializers import (
     QuizListSerializer,
@@ -305,6 +305,42 @@ class QuizDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
+class QuizUpdateView(LoginRequiredMixin, UpdateView):
+    """퀴즈 수정 페이지"""
+
+    model = Quiz
+    template_name = "quizzes/quiz_form.html"
+    fields = ["title", "description", "course", "section", "lesson"]
+
+    def dispatch(self, request, *args, **kwargs):
+        quiz = self.get_object()
+        if not request.user.is_instructor() or quiz.instructor != request.user:
+            messages.error(request, "자신이 만든 퀴즈만 수정할 수 있습니다.")
+            return redirect("quizzes:quiz-detail", pk=quiz.pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["courses"] = Course.objects.filter(instructor=self.request.user)
+
+        # 현재 선택된 강의의 섹션들
+        if self.object.course:
+            context["sections"] = self.object.course.sections.all()
+
+            # 현재 선택된 섹션의 레슨들
+            if self.object.section:
+                context["lessons"] = self.object.section.lessons.all()
+
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, "퀴즈가 성공적으로 수정되었습니다.")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse("quizzes:quiz-detail", kwargs={"pk": self.object.pk})
+
+
 class QuizCreateView(LoginRequiredMixin, CreateView):
     """퀴즈 생성 페이지"""
 
@@ -316,6 +352,47 @@ class QuizCreateView(LoginRequiredMixin, CreateView):
         if not request.user.is_instructor():
             messages.error(request, "강사만 퀴즈를 생성할 수 있습니다.")
             return redirect("courses:course-list")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["courses"] = Course.objects.filter(instructor=self.request.user)
+
+        # URL에서 course_id가 제공되었는지 확인
+        course_id = self.request.GET.get("course_id")
+        if course_id:
+            context["course_id"] = course_id
+            try:
+                course = Course.objects.get(id=course_id, instructor=self.request.user)
+                context["sections"] = course.sections.all()
+            except Course.DoesNotExist:
+                pass
+
+        return context
+
+    def form_valid(self, form):
+        form.instance.instructor = self.request.user
+        messages.success(
+            self.request, "퀴즈가 성공적으로 생성되었습니다. 이제 문제를 추가해주세요."
+        )
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse("quizzes:quiz-detail", kwargs={"pk": self.object.pk})
+
+
+class QuizDeleteView(LoginRequiredMixin, DeleteView):
+    """퀴즈 삭제 페이지"""
+
+    model = Quiz
+    template_name = "quizzes/quiz_confirm_delete.html"
+    success_url = reverse_lazy("quizzes:quiz-list")
+
+    def dispatch(self, request, *args, **kwargs):
+        quiz = self.get_object()
+        if not request.user.is_instructor() or quiz.instructor != request.user:
+            messages.error(request, "자신이 만든 퀴즈만 삭제할 수 있습니다.")
+            return redirect("quizzes:quiz-detail", pk=quiz.pk)
         return super().dispatch(request, *args, **kwargs)
 
 
@@ -560,80 +637,6 @@ class QuizResultView(LoginRequiredMixin, View):
             messages.error(request, "존재하지 않는 퀴즈입니다.")
             return redirect("quizzes:quiz-list")
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        # 강사가 만든 강의 목록
-        context["courses"] = Course.objects.filter(instructor=self.request.user)
-
-        # URL에서 course_id가 제공되었는지 확인
-        course_id = self.request.GET.get("course_id")
-        if course_id:
-            context["course_id"] = course_id
-            try:
-                course = Course.objects.get(id=course_id, instructor=self.request.user)
-                context["sections"] = course.sections.all()
-            except Course.DoesNotExist:
-                pass
-
-        return context
-
-    def form_valid(self, form):
-        form.instance.instructor = self.request.user
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        return reverse("quizzes:quiz-detail", kwargs={"pk": self.object.pk})
-
-
-class QuizUpdateView(LoginRequiredMixin, UpdateView):
-    """퀴즈 수정 페이지"""
-
-    model = Quiz
-    template_name = "quizzes/quiz_form.html"
-    fields = ["title", "description", "course", "section", "lesson"]
-
-    def dispatch(self, request, *args, **kwargs):
-        quiz = self.get_object()
-        if not request.user.is_instructor() or quiz.instructor != request.user:
-            messages.error(request, "자신이 만든 퀴즈만 수정할 수 있습니다.")
-            return redirect("quizzes:quiz-detail", pk=quiz.pk)
-        return super().dispatch(request, *args, **kwargs)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        # 강사가 만든 강의 목록
-        context["courses"] = Course.objects.filter(instructor=self.request.user)
-
-        # 현재 선택된 course의 sections
-        if self.object.course:
-            context["sections"] = self.object.course.sections.all()
-
-            # 현재 선택된 section의 lessons
-            if self.object.section:
-                context["lessons"] = self.object.section.lessons.all()
-
-        return context
-
-    def get_success_url(self):
-        return reverse("quizzes:quiz-detail", kwargs={"pk": self.object.pk})
-
-
-class QuizDeleteView(LoginRequiredMixin, DeleteView):
-    """퀴즈 삭제 페이지"""
-
-    model = Quiz
-    template_name = "quizzes/quiz_confirm_delete.html"
-    success_url = reverse_lazy("quizzes:quiz-list")
-
-    def dispatch(self, request, *args, **kwargs):
-        quiz = self.get_object()
-        if not request.user.is_instructor() or quiz.instructor != request.user:
-            messages.error(request, "자신이 만든 퀴즈만 삭제할 수 있습니다.")
-            return redirect("quizzes:quiz-detail", pk=quiz.pk)
-        return super().dispatch(request, *args, **kwargs)
-
 
 class QuestionCreateView(LoginRequiredMixin, View):
     """문제 생성 페이지"""
@@ -839,14 +842,7 @@ class QuestionUpdateView(LoginRequiredMixin, View):
 
             # 최소 2개의 선택지와 1개 이상의 정답이 있는지 확인
             if choice_count < 2:
-                messages.error(request, "최소 2개의 선택지가 필요합니다.")
-                # 롤백은 되지만, 재생성을 위해 기존 선택지를 다시 불러옴
-                for choice in question.choices.all():
-                    Choice.objects.create(
-                        question=question,
-                        text=choice.text,
-                        is_correct=choice.is_correct,
-                    )
+                # 트랜잭션 내에서 오류가 발생하면 자동으로 롤백됨
                 return render(
                     request,
                     self.template_name,
@@ -857,14 +853,7 @@ class QuestionUpdateView(LoginRequiredMixin, View):
                 )
 
             if not has_correct_answer:
-                messages.error(request, "최소 1개의 정답이 필요합니다.")
-                # 롤백은 되지만, 재생성을 위해 기존 선택지를 다시 불러옴
-                for choice in question.choices.all():
-                    Choice.objects.create(
-                        question=question,
-                        text=choice.text,
-                        is_correct=choice.is_correct,
-                    )
+                # 트랜잭션 내에서 오류가 발생하면 자동으로 롤백됨
                 return render(
                     request,
                     self.template_name,
