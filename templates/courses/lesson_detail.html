@@ -66,22 +66,6 @@
                     {% endif %}
                 </div>
             </div>
-
-            <!-- 질문하기 및 레슨 관련 질문 링크 -->
-            <div class="flex items-center mt-4 space-x-4">
-                <a href="{% url 'qna:question-create-course' course_id=lesson.section.course.id %}?lesson={{ lesson.id }}" class="inline-flex items-center text-sm text-blue-600 hover:underline">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    질문하기
-                </a>
-                <a href="{% url 'qna:question-list-course' course_id=lesson.section.course.id %}?lesson={{ lesson.id }}" class="inline-flex items-center text-sm text-blue-600 hover:underline">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                    </svg>
-                    이 레슨의 질문 보기
-                </a>
-            </div>
             
             <!-- 퀴즈 섹션 (이 레슨에 연결된 퀴즈가 있는 경우) -->
             {% if quizzes %}
@@ -120,7 +104,7 @@
         
         <!-- 사이드바 - 레슨 목록 -->
         <div class="lg:col-span-1">
-            <div class="bg-white rounded-lg shadow-md p-4">
+            <div class="bg-white rounded-lg shadow-md p-4 mb-6">
                 <h2 class="text-lg font-bold mb-4">강의 목차</h2>
                 
                 <div class="space-y-4">
@@ -192,6 +176,66 @@
                             </svg>
                         </a>
                     {% endif %}
+                </div>
+            </div>
+
+            <!-- 사이드바 - 질문 섹션 -->
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h2 class="text-lg font-bold mb-4">이 레슨의 질문</h2>
+                
+                <div class="mb-4">
+                    <a href="{% url 'qna:question-create-course' course_id=lesson.section.course.id %}?lesson={{ lesson.id }}" 
+                       class="w-full flex justify-center items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        새 질문 작성하기
+                    </a>
+                </div>
+                
+                <div class="divide-y divide-gray-200">
+                    <!-- 레슨 관련 질문 목록 (최대 5개) -->
+                    {% if lesson.questions.all %}
+                        {% for question in lesson.questions.all|slice:":5" %}
+                            <div class="py-3">
+                                <a href="{% url 'qna:question-detail' pk=question.id %}" class="block hover:bg-gray-50 p-2 -mx-2 rounded">
+                                    <h3 class="font-medium text-blue-600 hover:underline line-clamp-1">{{ question.title }}</h3>
+                                    <div class="flex items-center text-sm text-gray-500 mt-1">
+                                        <span>{{ question.user.username }}</span>
+                                        <span class="mx-1">•</span>
+                                        <span>답변 {{ question.answers.count }}개</span>
+                                        {% if question.is_resolved %}
+                                            <span class="ml-2 px-1.5 py-0.5 text-xs bg-green-100 text-green-800 rounded">해결됨</span>
+                                        {% endif %}
+                                    </div>
+                                </a>
+                            </div>
+                        {% endfor %}
+                        
+                        {% if lesson.questions.count > 5 %}
+                            <div class="py-3 text-center">
+                                <a href="{% url 'qna:question-list-course' course_id=lesson.section.course.id %}?lesson={{ lesson.id }}" 
+                                   class="text-sm text-blue-600 hover:underline">
+                                    모든 질문 보기 ({{ lesson.questions.count }}개)
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="py-6 text-center text-gray-500">
+                            <p>아직 이 레슨에 대한 질문이 없습니다.</p>
+                            <p class="mt-2 text-sm">첫 번째 질문을 작성해보세요!</p>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- 모든 질문 보기 링크 -->
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <a href="{% url 'qna:question-list-course' course_id=lesson.section.course.id %}" class="text-sm text-blue-600 hover:underline flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        강의 전체 질문 보기
+                    </a>
                 </div>
             </div>
         </div>
