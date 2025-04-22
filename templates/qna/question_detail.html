@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ question.title }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-6">
+        <div class="flex items-center space-x-2 text-sm text-gray-500 mb-2">
+            <a href="{% url 'courses:course-detail' pk=question.course.id %}" class="hover:underline">{{ question.course.title }}</a>
+            <span>›</span>
+            <a href="{% url 'qna:question-list-course' course_id=question.course.id %}" class="hover:underline">질문 목록</a>
+        </div>
+        <h1 class="text-3xl font-bold">{{ question.title }}</h1>
+    </div>
+
+    <!-- 질문 내용 -->
+    <div class="bg-white shadow-md rounded-lg overflow-hidden mb-6">
+        <div class="p-6">
+            <div class="flex justify-between items-start mb-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center">
+                            {{ question.user.username|first }}
+                        </div>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-900">{{ question.user.username }}</p>
+                        <p class="text-xs text-gray-500">{{ question.created_at|date:"Y-m-d H:i" }}</p>
+                    </div>
+                </div>
+                <div>
+                    {% if question.is_resolved %}
+                    <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">해결됨</span>
+                    {% else %}
+                    <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">미해결</span>
+                    {% endif %}
+                    
+                    {% if question.lesson %}
+                    <a href="{% url 'courses:lesson-detail' pk=question.lesson.id %}" class="ml-2 px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200">
+                        {{ question.lesson.title }}
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="prose max-w-none">
+                {{ question.content|linebreaks }}
+            </div>
+            
+            <div class="mt-6 flex justify-between items-center pt-4 border-t">
+                <div>
+                    {% if question.user == request.user or request.user.is_staff %}
+                    <a href="{% url 'qna:question-edit' pk=question.id %}" class="text-sm text-blue-600 hover:underline mr-3">수정</a>
+                    <a href="{% url 'qna:question-delete' pk=question.id %}" class="text-sm text-red-600 hover:underline">삭제</a>
+                    {% endif %}
+                </div>
+                <div>
+                    {% if question.user == request.user or request.user.is_instructor and question.course.instructor == request.user %}
+                    {% if question.is_resolved %}
+                    <form method="post" action="{% url 'qna:question-mark-unresolved' pk=question.id %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="text-sm text-gray-500 hover:underline">미해결로 표시</button>
+                    </form>
+                    {% else %}
+                    <form method="post" action="{% url 'qna:question-mark-resolved' pk=question.id %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="text-sm text-green-600 hover:underline">해결됨으로 표시</button>
+                    </form>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 답변 섹션 -->
+    <div class="mb-6">
+        <h2 class="text-xl font-bold mb-4">
+            답변 {{ answers.count }}개
+        </h2>
+
+        {% if answers %}
+        <div class="space-y-4">
+            {% for answer in answers %}
+            <div class="bg-white shadow-md rounded-lg overflow-hidden {% if answer.is_accepted %}border-2 border-green-500{% endif %}">
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-10 h-10 {% if answer.user.is_instructor %}bg-green-500{% else %}bg-blue-500{% endif %} text-white rounded-full flex items-center justify-center">
+                                    {{ answer.user.username|first }}
+                                </div>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-900">{{ answer.user.username }}</p>
+                                <p class="text-xs text-gray-500">{{ answer.created_at|date:"Y-m-d H:i" }}</p>
+                            </div>
+                        </div>
+                        <div>
+                            {% if answer.is_accepted %}
+                            <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">채택된 답변</span>
+                            {% endif %}
+                            
+                            {% if answer.user.is_instructor %}
+                            <span class="ml-2 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">강사</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="prose max-w-none">
+                        {{ answer.content|linebreaks }}
+                    </div>
+                    
+                    <div class="mt-6 flex justify-between items-center pt-4 border-t">
+                        <div>
+                            {% if answer.user == request.user or request.user.is_staff %}
+                            <a href="{% url 'qna:answer-edit' pk=answer.id %}" class="text-sm text-blue-600 hover:underline mr-3">수정</a>
+                            <a href="{% url 'qna:answer-delete' pk=answer.id %}" class="text-sm text-red-600 hover:underline">삭제</a>
+                            {% endif %}
+                        </div>
+                        <div>
+                            {% if can_accept and not answer.is_accepted %}
+                            <form method="post" action="{% url 'qna:answer-accept' pk=answer.id %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="text-sm text-green-600 hover:underline">답변 채택</button>
+                            </form>
+                            {% elif can_accept and answer.is_accepted %}
+                            <form method="post" action="{% url 'qna:answer-unaccept' pk=answer.id %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="text-sm text-gray-500 hover:underline">채택 취소</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-white shadow-md rounded-lg p-6 text-center text-gray-500">
+            아직 답변이 없습니다. 첫 번째 답변을 작성해보세요!
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 답변 작성 폼 -->
+    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+        <div class="p-6">
+            <h3 class="text-lg font-bold mb-4">답변 작성</h3>
+            <form method="post" action="{% url 'qna:question-detail' pk=question.id %}">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <textarea name="content" rows="6" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="답변을 작성해주세요..."></textarea>
+                </div>
+                <div class="flex justify-end">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        답변 등록
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

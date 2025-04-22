@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+{% if question %}질문 수정{% else %}새 질문 작성{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">
+        {% if question %}질문 수정{% else %}새 질문 작성{% endif %}
+    </h1>
+
+    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+        <div class="p-6">
+            <form method="post" action="{% if question %}{% url 'qna:question-edit' pk=question.id %}{% else %}{% if course %}{% url 'qna:question-create-course' course_id=course.id %}{% else %}{% url 'qna:question-create' %}{% endif %}{% endif %}">
+                {% csrf_token %}
+                
+                <!-- 강의 선택 필드 (새 질문 작성 시에만) -->
+                {% if not question and not course %}
+                <div class="mb-4">
+                    <label for="course" class="block text-sm font-medium text-gray-700 mb-1">강의 *</label>
+                    <select name="course" id="course" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <option value="">-- 강의 선택 --</option>
+                        {% for course_item in available_courses %}
+                        <option value="{{ course_item.id }}">{{ course_item.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% elif course %}
+                <input type="hidden" name="course" value="{{ course.id }}">
+                {% endif %}
+                
+                <!-- 레슨 선택 필드 -->
+                <div class="mb-4 {% if not course and not question %}hidden{% endif %}" id="lesson-container">
+                    <label for="lesson" class="block text-sm font-medium text-gray-700 mb-1">레슨 (선택사항)</label>
+                    <select name="lesson" id="lesson" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">-- 선택 없음 --</option>
+                        {% for lesson in lessons %}
+                        <option value="{{ lesson.id }}" {% if question.lesson.id == lesson.id %}selected{% endif %}>
+                            {{ lesson.section.title }} - {{ lesson.title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="mt-1 text-xs text-gray-500">특정 강의 영상과 관련된 질문인 경우 선택하세요.</div>
+                </div>
+                
+                <!-- 제목 필드 -->
+                <div class="mb-4">
+                    <label for="title" class="block text-sm font-medium text-gray-700 mb-1">제목 *</label>
+                    <input type="text" name="title" id="title" value="{% if question %}{{ question.title }}{% endif %}" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                           placeholder="질문 제목을 입력하세요" required>
+                </div>
+                
+                <!-- 내용 필드 -->
+                <div class="mb-6">
+                    <label for="content" class="block text-sm font-medium text-gray-700 mb-1">내용 *</label>
+                    <textarea name="content" id="content" rows="10" 
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                              placeholder="질문 내용을 자세히 작성해주세요" required>{% if question %}{{ question.content }}{% endif %}</textarea>
+                </div>
+                
+                <!-- 버튼 -->
+                <div class="flex justify-end">
+                    <a href="{% if question %}{% url 'qna:question-detail' pk=question.id %}{% elif course %}{% url 'qna:question-list-course' course_id=course.id %}{% else %}{% url 'qna:question-list' %}{% endif %}" 
+                       class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded mr-2">
+                        취소
+                    </a>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        {% if question %}수정 완료{% else %}질문 등록{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 강의 선택 시 해당 강의의 레슨 목록을 가져오는 스크립트
+    document.addEventListener('DOMContentLoaded', function() {
+        const courseSelect = document.getElementById('course');
+        if (courseSelect) {
+            courseSelect.addEventListener('change', function() {
+                const courseId = this.value;
+                if (courseId) {
+                    const lessonContainer = document.getElementById('lesson-container');
+                    lessonContainer.classList.remove('hidden');
+                    
+                    // 강의에 해당하는 레슨 목록을 가져오는 AJAX 요청
+                    fetch(`/api/lessons/?section__course=${courseId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            const lessonSelect = document.getElementById('lesson');
+                            lessonSelect.innerHTML = '<option value="">-- 선택 없음 --</option>';
+                            
+                            if (data.results && data.results.length > 0) {
+                                data.results.forEach(lesson => {
+                                    const option = document.createElement('option');
+                                    option.value = lesson.id;
+                                    option.textContent = `${lesson.section_title} - ${lesson.title}`;
+                                    lessonSelect.appendChild(option);
+                                });
+                            }
+                        })
+                        .catch(error => console.error('Error fetching lessons:', error));
+                } else {
+                    const lessonContainer = document.getElementById('lesson-container');
+                    lessonContainer.classList.add('hidden');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
