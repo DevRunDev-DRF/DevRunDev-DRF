@@ -279,6 +279,55 @@
             {% endif %}
         {% endif %}
     </div>
+
+    <!-- QnA 섹션 -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">질문과 답변</h2>
+            
+            <a href="{% url 'qna:question-list-course' course_id=course.id %}" class="text-blue-600 hover:underline">
+                전체 질문 보기
+            </a>
+        </div>
+        
+        <!-- 최근 질문 목록 (상위 3개) -->
+        {% if course.questions.exists %}
+            <div class="divide-y divide-gray-200">
+                {% for question in course.questions.all|slice:":3" %}
+                    <div class="py-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-medium">
+                                <a href="{% url 'qna:question-detail' pk=question.id %}" class="text-blue-600 hover:underline">
+                                    {{ question.title }}
+                                </a>
+                                {% if question.is_resolved %}
+                                    <span class="ml-2 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">해결됨</span>
+                                {% endif %}
+                            </h3>
+                        </div>
+                        <div class="text-sm text-gray-500 mt-1">
+                            {{ question.user.username }} · {{ question.created_at|date:"Y-m-d" }} · 
+                            답변 {{ question.answers.count }}개
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <div class="mt-4 text-center">
+                <a href="{% url 'qna:question-create-course' course_id=course.id %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors">
+                    새 질문 작성하기
+                </a>
+            </div>
+        {% else %}
+            <p class="text-gray-500 mb-4">아직 질문이 없습니다. 첫 번째 질문을 작성해보세요!</p>
+            
+            <div class="text-center">
+                <a href="{% url 'qna:question-create-course' course_id=course.id %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors">
+                    질문 작성하기
+                </a>
+            </div>
+        {% endif %}
+    </div>
     
     <!-- 퀴즈 섹션 (수강생 및 강사만 볼 수 있음) -->
     {% if is_enrolled or user == course.instructor %}

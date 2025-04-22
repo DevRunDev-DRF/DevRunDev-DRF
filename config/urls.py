@@ -44,6 +44,7 @@ urlpatterns = [
     path("quizzes/", include("quizzes.urls")),
     path("enrollments/", include("enrollments.urls")),
     path("reviews/", include("reviews.urls")),
+    path("qna/", include("qna.urls")),
     path("admin/dashboard-data/", admin_dashboard_data, name="admin-dashboard-data"),
     # Swagger 문서 URL
     path(
