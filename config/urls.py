@@ -10,6 +10,7 @@ from .admin_views import admin_dashboard_data
 
 # Courses app의 API 뷰셋 가져오기
 from courses.views import CourseViewSet, SectionViewSet, LessonViewSet
+from quizzes.views import QuizViewSet
 
 # API 라우터 설정
 router = DefaultRouter()
@@ -54,6 +55,16 @@ urlpatterns = [
         name="schema-swagger-ui",
     ),
     path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
+    path(
+        "api/quiz/<int:pk>/start-attempt/",
+        QuizViewSet.as_view({"post": "start_attempt"}),
+        name="quiz-start-attempt",
+    ),
+    path(
+        "api/quiz/<int:pk>/submit-attempt/",
+        QuizViewSet.as_view({"post": "submit_attempt"}),
+        name="quiz-submit-attempt",
+    ),
 ]
 
 if settings.DEBUG:
