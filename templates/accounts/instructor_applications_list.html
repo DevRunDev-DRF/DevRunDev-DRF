@@ -1,0 +1,24 @@
+{% if applications %}
+<div class="space-y-4">
+    {% for application in applications %}
+    <div class="p-4 border rounded bg-gray-50">
+        <div class="flex justify-between items-start">
+            <div>
+                <h4 class="font-bold">{{ application.user.username }}</h4>
+                <p class="text-sm text-gray-600">{{ application.created_at|date:"Y년 m월 d일" }} 신청</p>
+            </div>
+            <span class="px-2 py-1 text-xs font-medium rounded-full 
+                {% if application.status == 'PENDING' %}bg-yellow-100 text-yellow-800
+                {% elif application.status == 'APPROVED' %}bg-green-100 text-green-800
+                {% else %}bg-red-100 text-red-800{% endif %}">
+                {{ application.get_status_display }}
+            </span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-6 text-gray-500">
+    <p>아직 신청 내역이 없습니다.</p>
+</div>
+{% endif %}

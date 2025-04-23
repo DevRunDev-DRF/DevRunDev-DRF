@@ -1,7 +1,10 @@
-<div class="bg-gray-50 p-4 rounded shadow">
+<div id="instructor-application-form" class="bg-gray-50 p-4 rounded shadow">
     <h4 class="font-bold mb-4">강사 신청 양식</h4>
     
-    <form hx-post="{% url 'accounts:instructor-applications-list' %}" hx-swap="outerHTML" class="space-y-4">
+    <form hx-post="{% url 'accounts:instructor-applications-list' %}" 
+          hx-target="#instructor-application-form" 
+          hx-swap="outerHTML"
+          class="space-y-4">
         {% csrf_token %}
         
         <div>

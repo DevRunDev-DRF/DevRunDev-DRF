@@ -13,7 +13,11 @@ from .views import (
 
 router = DefaultRouter()
 router.register(r"users", UserViewSet)
-router.register(r"instructor-applications", InstructorApplicationViewSet)
+router.register(
+    r"instructor-applications",
+    InstructorApplicationViewSet,
+    basename="instructor-applications",
+)
 
 app_name = "accounts"
 

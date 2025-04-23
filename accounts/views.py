@@ -9,6 +9,9 @@ from django.contrib.auth import logout, login as django_login
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+
 from enrollments.models import Enrollment
 
 from drf_yasg.utils import swagger_auto_schema
@@ -198,7 +201,12 @@ def profile_view(request):
 
 def instructor_application_form(request):
     """강사 신청 양식 렌더링"""
-    return render(request, "accounts/instructor_application_form.html")
+    is_htmx = request.headers.get("HX-Request") == "true"
+
+    if is_htmx:
+        return render(request, "accounts/instructor_application_form.html")
+    else:
+        return render(request, "accounts/instructor_application_form_page.html")
 
 
 class LogoutView(APIView):
@@ -347,6 +355,14 @@ class InstructorApplicationViewSet(viewsets.ModelViewSet):
         operation_description="강사 신청 목록을 조회합니다. 관리자는 모든 신청을 볼 수 있고, 일반 사용자는 자신의 신청만 볼 수 있습니다.",
     )
     def list(self, request, *args, **kwargs):
+        # HTML 요청인 경우 다르게 처리
+        if request.accepted_renderer.format == "html":
+            queryset = self.filter_queryset(self.get_queryset())
+            return render(
+                request,
+                "accounts/instructor_applications_list.html",
+                {"applications": queryset},
+            )
         return super().list(request, *args, **kwargs)
 
     @swagger_auto_schema(
@@ -367,7 +383,45 @@ class InstructorApplicationViewSet(viewsets.ModelViewSet):
         },
     )
     def create(self, request, *args, **kwargs):
-        # 기존 로직은 perform_create에 있으므로, 여기서는 super().create를 호출
+        # HTMX 요청 확인 (HTMX는 특별한 헤더를 보냄)
+        is_htmx = request.headers.get("HX-Request") == "true"
+
+        # API 요청이 아닌 경우 - HTMX 또는 HTML 폼 제출
+        if (
+            is_htmx
+            or request.content_type.startswith("multipart/form-data")
+            or request.content_type.startswith("application/x-www-form-urlencoded")
+        ):
+            try:
+                serializer = self.get_serializer(data=request.data)
+                serializer.is_valid(raise_exception=True)
+                self.perform_create(serializer)
+
+                # 성공 메시지를 담은 HTML 응답 반환
+                return HttpResponse(
+                    render_to_string("accounts/instructor_application_success.html"),
+                    content_type="text/html",
+                )
+            except serializers.ValidationError as e:
+                # 오류 메시지 추출
+                if hasattr(e, "detail"):
+                    if isinstance(e.detail, dict) and "detail" in e.detail:
+                        error_message = str(e.detail["detail"])
+                    else:
+                        error_message = str(e.detail)
+                else:
+                    error_message = "신청 처리 중 오류가 발생했습니다."
+
+                # 오류 메시지를 담은 HTML 응답 반환
+                return HttpResponse(
+                    render_to_string(
+                        "accounts/instructor_application_error.html",
+                        {"error_message": error_message},
+                    ),
+                    content_type="text/html",
+                )
+
+        # 일반 API 요청 처리
         return super().create(request, *args, **kwargs)
 
     @swagger_auto_schema(
