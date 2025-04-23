@@ -149,6 +149,178 @@ uv run python manage.py seed_data
 
 ## 4.📝 API 문서
 
+### 1. 사용자 관리 API (accounts)
+
+#### 인증 및 계정 관리
+
+| 메서드 | URL 패턴 | 기능 | 로그인 필요 | 권한 |
+|---|---|---|---|---|
+| GET/POST | `/accounts/register/` | 사용자 회원가입 폼/처리 | ❌ | 없음 |
+| GET/POST | `/accounts/login/` | 사용자 로그인 폼/처리 | ❌ | 없음 |
+| GET/POST | `/accounts/logout/` | 사용자 로그아웃 | ✅ | 로그인 사용자 |
+| GET | `/accounts/profile/` | 사용자 프로필 조회 | ✅ | 로그인 사용자 |
+| GET | `/accounts/user/me/` | 사용자 정보 조회 (API) | ✅ | 로그인 사용자 |
+| PATCH/PUT | `/accounts/user/me/` | 사용자 정보 수정 (API) | ✅ | 로그인 사용자 |
+
+#### 강사 신청
+
+| 메서드 | URL 패턴 | 기능 | 로그인 필요 | 권한 |
+|---|---|---|---|---|
+| GET | `/accounts/instructor-application-form/` | 강사 신청 폼 보기 | ✅ | 학생 |
+| POST | `/api/instructor-applications/` | 강사 신청하기 | ✅ | 학생 |
+| GET | `/api/instructor-applications/` | 강사 신청 목록 보기 | ✅ | 관리자, 본인 신청 조회 |
+| GET | `/api/instructor-applications/{id}/` | 강사 신청 상세 보기 | ✅ | 관리자, 본인 신청만 조회 |
+
+### 2. 강의 관리 API (courses)
+
+#### 강의 검색 및 조회
+
+| 메서드 | URL 패턴 | 기능 | 로그인 필요 | 권한 |
+|---|---|---|---|---|
+| GET | `/courses/` | 강의 목록 조회 | ❌ | 없음 (승인된 강의만) |
+| GET | `/courses/{id}/` | 강의 상세 조회 | ❌ | 없음 (승인된 강의만) |
+| GET | `/courses/search/` | 강의 검색 | ❌ | 없음 (승인된 강의만) |
+| GET | `/api/courses/` | 강의 목록 조회 (API) | ❌ | 없음 (승인된 강의만) |
+| GET | `/api/courses/{id}/` | 강의 상세 조회 (API) | ❌ | 없음 (승인된 강의만) |
+
+#### 강의 생성 및 관리
+
+| 메서드 | URL 패턴 | 기능 | 로그인 필요 | 권한 |
+|---|---|---|---|---|
+| GET/POST | `/courses/create/` | 강의 생성 폼/처리 | ✅ | 강사 |
+| GET/POST | `/courses/{id}/edit/` | 강의 수정 폼/처리 | ✅ | 강의 소유 강사 |
+| GET/POST | `/courses/{id}/delete/` | 강의 삭제 확인/처리 | ✅ | 강의 소유 강사 |
+| POST | `/api/courses/{id}/enroll/` | 강의 수강 신청 | ✅ | 로그인 사용자 |
+
+#### 섹션 및 레슨 관리
+
+| 메서드 | URL 패턴 | 기능 | 로그인 필요 | 권한 |
+|---|---|---|---|---|
+| GET/POST | `/courses/sections/create/` | 섹션 생성 폼/처리 | ✅ | 강의 소유 강사 |
+| GET/POST | `/courses/sections/{id}/edit/` | 섹션 수정 폼/처리 | ✅ | 강의 소유 강사 |
+| POST | `/courses/sections/{id}/delete/` | 섹션 삭제 | ✅ | 강의 소유 강사 |
+| GET/POST | `/courses/lessons/create/` | 레슨 생성 폼/처리 | ✅ | 강의 소유 강사 |
+| GET/POST | `/courses/lessons/{id}/edit/` | 레슨 수정 폼/처리 | ✅ | 강의 소유 강사 |
+| POST | `/courses/lessons/{id}/delete/` | 레슨 삭제 | ✅ | 강의 소유 강사 |
+| GET | `/courses/lessons/{id}/` | 레슨 상세 조회 및 시청 | ✅ | 수강 학생, 강의 소유 강사 |
+
+#### 강사 대시보드
+
+| 메서드 | URL 패턴 | 기능 | 로그인 필요 | 권한 |
+|---|---|---|---|---|
+| GET | `/courses/instructor/dashboard/` | 강사 대시보드 | ✅ | 강사 |
+
+### 3. 수강 관리 API (enrollments)
+
+#### 수강 신청 및 관리
+
+| 메서드 | URL 패턴 | 기능 | 로그인 필요 | 권한 |
+|---|---|---|---|---|
+| GET | `/enrollments/my-courses/` | 내 수강 강의 목록 | ✅ | 로그인 사용자 |
+| GET | `/api/enrollments/` | 내 수강 신청 목록 (API) | ✅ | 로그인 사용자 |
+| GET | `/api/enrollments/{id}/` | 수강 신청 상세 (API) | ✅ | 본인 수강, 강의 소유 강사 |
+| POST | `/api/enrollments/{id}/reset_progress/` | 수강 진행 상태 초기화 | ✅ | 본인 수강만 |
+
+#### 수료증 관리
+
+| 메서드 | URL 패턴 | 기능 | 로그인 필요 | 권한 |
+|---|---|---|---|---|
+| GET | `/enrollments/my-certificates/` | 내 수료증 목록 | ✅ | 로그인 사용자 |
+| GET | `/enrollments/certificate/{certificate_id}/` | 수료증 상세 보기 | ✅ | 본인 수료증 |
+| GET | `/enrollments/certificate/{certificate_id}/print/` | 수료증 인쇄 | ✅ | 본인 수료증 |
+| POST | `/api/enrollments/{id}/generate_certificate/` | 수료증 발급 | ✅ | 본인 수강, 강의 완료 필요 |
+
+#### 장바구니 및 결제
+
+| 메서드 | URL 패턴 | 기능 | 로그인 필요 | 권한 |
+|---|---|---|---|---|
+| GET | `/enrollments/cart-view/` | 장바구니 페이지 | ✅ | 로그인 사용자 |
+| POST | `/api/cart/` | 장바구니에 강의 추가 | ✅ | 로그인 사용자 |
+| DELETE | `/api/cart/{id}/` | 장바구니에서 강의 제거 | ✅ | 본인 장바구니만 |
+| POST | `/api/cart/checkout/` | 장바구니 결제 | ✅ | 로그인 사용자 |
+| POST | `/enrollments/checkout-free/` | 무료 강의 수강 신청 | ✅ | 로그인 사용자 |
+| POST | `/enrollments/payments/prepare/` | 결제 준비 | ✅ | 로그인 사용자 |
+| POST | `/enrollments/payments/verify/` | 결제 검증 | ✅ | 로그인 사용자 |
+| POST | `/enrollments/payments/cancel/` | 결제 취소 | ✅ | 로그인 사용자 |
+
+#### 학습 진행 관리
+
+| 메서드 | URL 패턴 | 기능 | 로그인 필요 | 권한 |
+|---|---|---|---|---|
+| POST | `/api/progress/mark_completed/` | 레슨 완료 표시 | ✅ | 수강 학생만 |
+| POST | `/api/progress/update_last_watched/` | 마지막 시청 시간 갱신 | ✅ | 수강 학생만 |
+
+### 4. 퀴즈 관리 API (quizzes)
+
+#### 퀴즈 조회 및 응시
+
+| 메서드 | URL 패턴 | 기능 | 로그인 필요 | 권한 |
+|---|---|---|---|---|
+| GET | `/quizzes/` | 퀴즈 목록 | ✅ | 수강 학생, 강의 소유 강사 |
+| GET | `/quizzes/{id}/` | 퀴즈 상세 | ✅ | 수강 학생, 강의 소유 강사 |
+| GET | `/quizzes/{id}/attempt/` | 퀴즈 시도 | ✅ | 수강 학생, 강의 소유 강사 |
+| POST | `/quizzes/{id}/submit/` | 퀴즈 제출 | ✅ | 수강 학생, 강의 소유 강사 |
+| GET | `/quizzes/{id}/result/` | 퀴즈 결과 | ✅ | 수강 학생, 강의 소유 강사 |
+
+#### 퀴즈 생성 및 관리
+
+| 메서드 | URL 패턴 | 기능 | 로그인 필요 | 권한 |
+|---|---|---|---|---|
+| GET/POST | `/quizzes/create/` | 퀴즈 생성 폼/처리 | ✅ | 강사 |
+| GET/POST | `/quizzes/{id}/edit/` | 퀴즈 수정 폼/처리 | ✅ | 퀴즈 소유 강사 |
+| GET/POST | `/quizzes/{id}/delete/` | 퀴즈 삭제 확인/처리 | ✅ | 퀴즈 소유 강사 |
+
+#### 문제 관리
+
+| 메서드 | URL 패턴 | 기능 | 로그인 필요 | 권한 |
+|---|---|---|---|---|
+| GET/POST | `/quizzes/question/create/` | 문제 생성 폼/처리 | ✅ | 퀴즈 소유 강사 |
+| GET/POST | `/quizzes/question/{id}/edit/` | 문제 수정 폼/처리 | ✅ | 퀴즈 소유 강사 |
+| GET/POST | `/quizzes/question/{id}/delete/` | 문제 삭제 확인/처리 | ✅ | 퀴즈 소유 강사 |
+
+### 5. 리뷰 관리 API (reviews)
+
+#### 리뷰 조회 및 작성
+
+| 메서드 | URL 패턴 | 기능 | 로그인 필요 | 권한 |
+|---|---|---|---|---|
+| GET | `/api/reviews/` | 리뷰 목록 조회 | ❌ | 없음 (공개 리뷰만) |
+| GET | `/api/reviews/{id}/` | 리뷰 상세 조회 | ❌ | 없음 (공개 리뷰만) |
+| POST | `/api/reviews/` | 리뷰 작성 | ✅ | 수강 학생만 |
+| PUT/PATCH | `/api/reviews/{id}/` | 리뷰 수정 | ✅ | 본인 리뷰만 |
+| DELETE | `/api/reviews/{id}/` | 리뷰 삭제 | ✅ | 본인 리뷰만 |
+| GET/POST | `/reviews/{review_id}/edit/` | 리뷰 수정 폼/처리 | ✅ | 본인 리뷰만 |
+| GET/POST | `/reviews/{review_id}/delete/` | 리뷰 삭제 확인/처리 | ✅ | 본인 리뷰만 |
+
+### 6. 질문 답변 API (qna)
+
+#### 질문 조회 및 작성
+
+| 메서드 | URL 패턴 | 기능 | 로그인 필요 | 권한 |
+|---|---|---|---|---|
+| GET | `/qna/` | 질문 목록 | ✅ | 수강 학생, 강의 소유 강사 |
+| GET | `/qna/course/{course_id}/` | 강의별 질문 목록 | ✅ | 수강 학생, 강의 소유 강사 |
+| GET | `/qna/{id}/` | 질문 상세 | ✅ | 수강 학생, 강의 소유 강사 |
+| GET/POST | `/qna/create/` | 질문 작성 폼/처리 | ✅ | 수강 학생 |
+| GET/POST | `/qna/{id}/edit/` | 질문 수정 폼/처리 | ✅ | 본인 질문만 |
+| GET/POST | `/qna/{id}/delete/` | 질문 삭제 확인/처리 | ✅ | 본인 질문만 |
+
+#### 답변 작성 및 관리
+
+| 메서드 | URL 패턴 | 기능 | 로그인 필요 | 권한 |
+|---|---|---|---|---|
+| POST | `/qna/{id}/` | 답변 작성 | ✅ | 수강 학생, 강의 소유 강사 |
+| GET/POST | `/qna/answer/{id}/edit/` | 답변 수정 폼/처리 | ✅ | 본인 답변만 |
+| GET/POST | `/qna/answer/{id}/delete/` | 답변 삭제 확인/처리 | ✅ | 본인 답변만 |
+| POST | `/qna/answer/{id}/accept/` | 답변 채택 | ✅ | 질문 작성자, 강의 소유 강사 |
+| POST | `/qna/answer/{id}/unaccept/` | 답변 채택 취소 | ✅ | 질문 작성자, 강의 소유 강사 |
+| POST | `/qna/{id}/mark-resolved/` | 질문 해결됨 표시 | ✅ | 질문 작성자, 강의 소유 강사 |
+| POST | `/qna/{id}/mark-unresolved/` | 질문 미해결 표시 | ✅ | 질문 작성자, 강의 소유 강사 |
+
 ## 5. 📁프로젝트 구조
 
 ## 6. 💻 화면 설계
+
+## 7. ERD
+
+![DevRunDev-DRF-ERD](https://github.com/user-attachments/assets/c5905a90-e53d-405c-baea-7d64a9452d40)
