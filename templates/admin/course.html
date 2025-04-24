@@ -1,0 +1,182 @@
+{% extends 'admin/base_admin.html' %}
+{% load humanize %}
+
+{% block admin_title %}강의 관리{% endblock %}
+
+{% block admin_content %}
+<!-- 통계 카드 -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+  <div class="stat-card">
+    <div class="stat-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      </svg>
+    </div>
+    <div>
+      <div class="stat-number">{{ stats.total_courses|intcomma }}</div>
+      <div class="stat-label">전체 강의</div>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-icon" style="background-color: #dcfce7; color: #166534;">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </div>
+    <div>
+      <div class="stat-number">{{ stats.approved_courses|intcomma }}</div>
+      <div class="stat-label">승인된 강의</div>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-icon" style="background-color: #fef3c7; color: #92400e;">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </div>
+    <div>
+      <div class="stat-number">{{ stats.review_courses|intcomma }}</div>
+      <div class="stat-label">검토 중인 강의</div>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-icon" style="background-color: #fee2e2; color: #b91c1c;">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </div>
+    <div>
+      <div class="stat-number">{{ stats.rejected_courses|intcomma }}</div>
+      <div class="stat-label">반려된 강의</div>
+    </div>
+  </div>
+</div>
+
+<!-- 필터 및 검색 -->
+<div class="bg-white rounded-lg shadow-md p-4 mb-6">
+  <form method="get" class="flex flex-wrap gap-4 items-end">
+    <div>
+      <label for="status" class="block text-sm font-medium text-gray-700 mb-1">상태 필터</label>
+      <select id="status" name="status" class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+        <option value="" {% if not status_filter %}selected{% endif %}>전체</option>
+        <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>승인됨</option>
+        <option value="review" {% if status_filter == 'review' %}selected{% endif %}>검토 중</option>
+        <option value="not_approved" {% if status_filter == 'not_approved' %}selected{% endif %}>반려됨</option>
+      </select>
+    </div>
+    
+    <div>
+      <label for="search" class="block text-sm font-medium text-gray-700 mb-1">검색</label>
+      <input type="text" id="search" name="q" value="{{ search_query }}" placeholder="강의명 또는 설명 검색" 
+             class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+    </div>
+    
+    <div>
+      <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+        적용
+      </button>
+      
+      <a href="{% url 'admin-courses' %}" class="inline-flex items-center px-4 py-2 ml-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+        초기화
+      </a>
+    </div>
+  </form>
+</div>
+
+<!-- 강의 목록 -->
+<div class="bg-white rounded-lg shadow-md overflow-hidden">
+  {% if courses %}
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 data-table">
+        <thead>
+          <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">강의</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">강사</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">가격</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">평점</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">등록일</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
+            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {% for course in courses %}
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0 h-10 w-10">
+                    <img class="h-10 w-10 rounded-full object-cover" src="{{ course.thumbnail.url|default:'/static/images/default.jpg' }}" alt="">
+                  </div>
+                  <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-900">{{ course.title }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{{ course.instructor.username }}</div>
+                <div class="text-sm text-gray-500">{{ course.instructor.email }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {% if course.price == 0 %}
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">무료</span>
+                {% else %}
+                  ₩{{ course.price|intcomma }}
+                {% endif %}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="flex">
+                    {% for i in "12345" %}
+                      {% if forloop.counter <= course.avg_rating|floatformat:"0" %}
+                        <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                        </svg>
+                      {% else %}
+                        <svg class="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                        </svg>
+                      {% endif %}
+                    {% endfor %}
+                  </div>
+                  <span class="ml-1 text-sm text-gray-600">{{ course.avg_rating|floatformat:1 }}</span>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ course.created_at|date:"Y-m-d" }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                  {% if course.status == 'approved' %}bg-green-100 text-green-800
+                  {% elif course.status == 'review' %}bg-yellow-100 text-yellow-800
+                  {% else %}bg-red-100 text-red-800{% endif %}">
+                  {{ course.get_status_display }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <a href="{% url 'courses:course-detail' course.id %}" class="text-blue-600 hover:text-blue-900 mr-2">보기</a>
+                {% if course.status == 'review' %}
+                  <form method="post" action="{% url 'admin:approve-course' course.id %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="text-green-600 hover:text-green-900 mr-2">승인</button>
+                  </form>
+                  <form method="post" action="{% url 'admin:reject-course' course.id %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="text-red-600 hover:text-red-900">반려</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="p-6 text-center text-gray-500">
+      검색 결과가 없습니다.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

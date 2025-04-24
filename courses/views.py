@@ -65,7 +65,14 @@ class CourseViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Course.objects.all()
 
-        # 승인된 강의만 조회 (강사가 자신의 강의 조회 시에는 모든 상태 조회 가능)
+        # 관리자는 모든 강의 볼 수 있음
+        if (
+            self.request.user.is_authenticated
+            and self.request.user.role == self.request.user.Role.MANAGER
+        ):
+            return queryset
+
+        # 강사는 자신의 강의 또는 승인된 강의만 볼 수 있음
         if self.request.user.is_authenticated and self.request.user.is_instructor():
             if self.action == "list":
                 instructor_id = self.request.query_params.get("instructor")
@@ -318,7 +325,13 @@ class CourseListView(ListView):
     paginate_by = 12
 
     def get_queryset(self):
-        queryset = Course.objects.filter(status="approved")
+        if (
+            self.request.user.is_authenticated
+            and self.request.user.role == self.request.user.Role.MANAGER
+        ):
+            queryset = Course.objects.all()
+        else:
+            queryset = Course.objects.filter(status="approved")
 
         # 검색어
         search_query = self.request.GET.get("search")

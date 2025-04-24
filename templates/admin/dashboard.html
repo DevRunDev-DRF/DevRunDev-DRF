@@ -1,0 +1,595 @@
+{% extends 'admin/base_admin.html' %}
+{% load humanize %}
+
+{% block admin_title %}대시보드{% endblock %}
+
+{% block admin_content %}
+<!-- 통계 카드 섹션 -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+  <!-- 사용자 통계 -->
+  <div class="stat-card">
+    <div class="stat-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
+    </div>
+    <div>
+      <div class="stat-number">{{ stats.total_users|intcomma }}</div>
+      <div class="stat-label">총 회원 수</div>
+      <div class="text-xs text-green-600 mt-1">오늘 {{ stats.today_users|intcomma }}명 가입</div>
+    </div>
+  </div>
+  
+  <!-- 강의 통계 -->
+  <div class="stat-card">
+    <div class="stat-icon" style="background-color: #dbeafe; color: #1e40af;">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      </svg>
+    </div>
+    <div>
+      <div class="stat-number">{{ stats.total_courses|intcomma }}</div>
+      <div class="stat-label">총 강의 수</div>
+      <div class="text-xs text-gray-500 mt-1">
+        <span class="text-green-600">{{ stats.approved_courses }}</span> 승인됨, 
+        <span class="text-yellow-600">{{ stats.review_courses }}</span> 검토중
+      </div>
+    </div>
+  </div>
+  
+  <!-- 수강 통계 -->
+  <div class="stat-card">
+    <div class="stat-icon" style="background-color: #e0f2fe; color: #0369a1;">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+      </svg>
+    </div>
+    <div>
+      <div class="stat-number">{{ stats.total_enrollments|intcomma }}</div>
+      <div class="stat-label">총 수강 신청</div>
+      <div class="text-xs text-gray-500 mt-1">
+        이번 달 {{ stats.month_enrollments|intcomma }}건 신청
+      </div>
+    </div>
+  </div>
+  
+  <!-- 매출 통계 -->
+  <div class="stat-card">
+    <div class="stat-icon" style="background-color: #dcfce7; color: #166534;">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </div>
+    <div>
+      <div class="stat-number">₩{{ stats.total_revenue|intcomma }}</div>
+      <div class="stat-label">총 수익</div>
+      <div class="text-xs text-green-600 mt-1">
+        이번 달 ₩{{ stats.month_revenue|intcomma }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 주요 작업 버튼 -->
+<div class="flex flex-wrap gap-4 mb-8">
+  <a href="{% url 'admin-instructor-applications' %}?status=PENDING" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+    </svg>
+    대기 중인 강사 신청 ({{ stats.pending_instructors }})
+  </a>
+  
+  <a href="{% url 'admin-courses' %}?status=review" class="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+    </svg>
+    검토 중인 강의 ({{ stats.review_courses }})
+  </a>
+  
+  <a href="{% url 'admin-payments' %}" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    결제 관리
+  </a>
+</div>
+
+<!-- 콘텐츠 그리드 -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <!-- 최근 가입한 회원 -->
+  <div class="dashboard-card">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-bold">최근 가입한 회원</h2>
+      <a href="{% url 'admin-users' %}" class="text-blue-600 hover:text-blue-800 text-sm">더 보기</a>
+    </div>
+    
+    {% if recent_data.recent_users %}
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>이름</th>
+              <th>이메일</th>
+              <th>역할</th>
+              <th>가입일</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in recent_data.recent_users %}
+              <tr>
+                <td>{{ user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>
+                  <span class="status-badge 
+                    {% if user.role == 'Student' %}status-in-progress
+                    {% elif user.role == 'Instructor' %}status-approved
+                    {% else %}status-pending{% endif %}">
+                    {{ user.get_role_display }}
+                  </span>
+                </td>
+                <td>{{ user.date_joined|date:"Y-m-d H:i" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-gray-500 text-center py-4">최근 가입한 회원이 없습니다.</p>
+    {% endif %}
+  </div>
+  
+  <!-- 최근 추가된 강의 -->
+  <div class="dashboard-card">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-bold">최근 추가된 강의</h2>
+      <a href="{% url 'admin-courses' %}" class="text-blue-600 hover:text-blue-800 text-sm">더 보기</a>
+    </div>
+    
+    {% if recent_data.recent_courses %}
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>강의명</th>
+              <th>강사</th>
+              <th>가격</th>
+              <th>상태</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for course in recent_data.recent_courses %}
+              <tr>
+                <td>{{ course.title }}</td>
+                <td>{{ course.instructor.username }}</td>
+                <td>₩{{ course.price|intcomma }}</td>
+                <td>
+                  <span class="status-badge 
+                    {% if course.status == 'approved' %}status-approved
+                    {% elif course.status == 'review' %}status-review
+                    {% else %}status-rejected{% endif %}">
+                    {{ course.get_status_display }}
+                  </span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-gray-500 text-center py-4">최근 추가된 강의가 없습니다.</p>
+    {% endif %}
+  </div>
+  
+  <!-- 최근 수강 신청 -->
+  <div class="dashboard-card">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-bold">최근 수강 신청</h2>
+    </div>
+    
+    {% if recent_data.recent_enrollments %}
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>학생</th>
+              <th>강의</th>
+              <th>진행률</th>
+              <th>신청일</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for enrollment in recent_data.recent_enrollments %}
+              <tr>
+                <td>{{ enrollment.student.username }}</td>
+                <td>{{ enrollment.course.title }}</td>
+                <td>
+                  <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ enrollment.progress }}%"></div>
+                  </div>
+                  <span class="text-xs text-gray-500">{{ enrollment.progress|floatformat:0 }}%</span>
+                </td>
+                <td>{{ enrollment.enrolled_at|date:"Y-m-d" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-gray-500 text-center py-4">최근 수강 신청이 없습니다.</p>
+    {% endif %}
+  </div>
+  
+  <!-- 대기 중인 강사 신청 -->
+  <div class="dashboard-card">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-bold">대기 중인 강사 신청</h2>
+      <a href="{% url 'admin-instructor-applications' %}?status=PENDING" class="text-blue-600 hover:text-blue-800 text-sm">더 보기</a>
+    </div>
+    
+    {% if recent_data.recent_instructor_applications %}
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>신청자</th>
+              <th>이메일</th>
+              <th>신청일</th>
+              <th>상태</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for application in recent_data.recent_instructor_applications %}
+              <tr>
+                <td>{{ application.user.username }}</td>
+                <td>{{ application.user.email }}</td>
+                <td>{{ application.created_at|date:"Y-m-d" }}</td>
+                <td>
+                  <span class="status-badge status-pending">{{ application.get_status_display }}</span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-gray-500 text-center py-4">대기 중인 강사 신청이 없습니다.</p>
+    {% endif %}
+  </div>
+  
+  <!-- 월별 통계 -->
+  <div class="dashboard-card col-span-1 lg:col-span-2">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-bold">월별 통계</h2>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>월</th>
+            <th>신규 가입자</th>
+            <th>신규 수강 신청</th>
+            <th>매출</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for month_stat in monthly_stats %}
+            <tr>
+              <td>{{ month_stat.month }}</td>
+              <td>{{ month_stat.signups|intcomma }}명</td>
+              <td>{{ month_stat.enrollments|intcomma }}건</td>
+              <td>₩{{ month_stat.revenue|intcomma }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+{% extends 'admin/base_admin.html' %}
+{% load humanize %}
+
+{% block admin_title %}대시보드{% endblock %}
+
+{% block admin_content %}
+<!-- 통계 카드 섹션 -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+  <!-- 사용자 통계 -->
+  <div class="stat-card">
+    <div class="stat-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
+    </div>
+    <div>
+      <div class="stat-number">{{ stats.total_users|intcomma }}</div>
+      <div class="stat-label">총 회원 수</div>
+      <div class="text-xs text-green-600 mt-1">오늘 {{ stats.today_users|intcomma }}명 가입</div>
+    </div>
+  </div>
+  
+  <!-- 강의 통계 -->
+  <div class="stat-card">
+    <div class="stat-icon" style="background-color: #dbeafe; color: #1e40af;">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      </svg>
+    </div>
+    <div>
+      <div class="stat-number">{{ stats.total_courses|intcomma }}</div>
+      <div class="stat-label">총 강의 수</div>
+      <div class="text-xs text-gray-500 mt-1">
+        <span class="text-green-600">{{ stats.approved_courses }}</span> 승인됨, 
+        <span class="text-yellow-600">{{ stats.review_courses }}</span> 검토중
+      </div>
+    </div>
+  </div>
+  
+  <!-- 수강 통계 -->
+  <div class="stat-card">
+    <div class="stat-icon" style="background-color: #e0f2fe; color: #0369a1;">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+      </svg>
+    </div>
+    <div>
+      <div class="stat-number">{{ stats.total_enrollments|intcomma }}</div>
+      <div class="stat-label">총 수강 신청</div>
+      <div class="text-xs text-gray-500 mt-1">
+        이번 달 {{ stats.month_enrollments|intcomma }}건 신청
+      </div>
+    </div>
+  </div>
+  
+  <!-- 매출 통계 -->
+  <div class="stat-card">
+    <div class="stat-icon" style="background-color: #dcfce7; color: #166534;">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </div>
+    <div>
+      <div class="stat-number">₩{{ stats.total_revenue|intcomma }}</div>
+      <div class="stat-label">총 수익</div>
+      <div class="text-xs text-green-600 mt-1">
+        이번 달 ₩{{ stats.month_revenue|intcomma }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 주요 작업 버튼 -->
+<div class="flex flex-wrap gap-4 mb-8">
+  <a href="{% url 'admin-instructor-applications' %}?status=PENDING" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+    </svg>
+    대기 중인 강사 신청 ({{ stats.pending_instructors }})
+  </a>
+  
+  <a href="{% url 'admin-courses' %}?status=review" class="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+    </svg>
+    검토 중인 강의 ({{ stats.review_courses }})
+  </a>
+  
+  <a href="{% url 'admin-payments' %}" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    결제 관리
+  </a>
+</div>
+
+<!-- 콘텐츠 그리드 -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <!-- 최근 가입한 회원 -->
+  <div class="dashboard-card">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-bold">최근 가입한 회원</h2>
+      <a href="{% url 'admin-users' %}" class="text-blue-600 hover:text-blue-800 text-sm">더 보기</a>
+    </div>
+    
+    {% if recent_data.recent_users %}
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>이름</th>
+              <th>이메일</th>
+              <th>역할</th>
+              <th>가입일</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in recent_data.recent_users %}
+              <tr>
+                <td>{{ user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>
+                  <span class="status-badge 
+                    {% if user.role == 'Student' %}status-in-progress
+                    {% elif user.role == 'Instructor' %}status-approved
+                    {% else %}status-pending{% endif %}">
+                    {{ user.get_role_display }}
+                  </span>
+                </td>
+                <td>{{ user.date_joined|date:"Y-m-d H:i" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-gray-500 text-center py-4">최근 가입한 회원이 없습니다.</p>
+    {% endif %}
+  </div>
+  
+  <!-- 최근 추가된 강의 -->
+  <div class="dashboard-card">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-bold">최근 추가된 강의</h2>
+      <a href="{% url 'admin-courses' %}" class="text-blue-600 hover:text-blue-800 text-sm">더 보기</a>
+    </div>
+    
+    {% if recent_data.recent_courses %}
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>강의명</th>
+              <th>강사</th>
+              <th>가격</th>
+              <th>상태</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for course in recent_data.recent_courses %}
+              <tr>
+                <td>{{ course.title }}</td>
+                <td>{{ course.instructor.username }}</td>
+                <td>₩{{ course.price|intcomma }}</td>
+                <td>
+                  <span class="status-badge 
+                    {% if course.status == 'approved' %}status-approved
+                    {% elif course.status == 'review' %}status-review
+                    {% else %}status-rejected{% endif %}">
+                    {{ course.get_status_display }}
+                  </span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-gray-500 text-center py-4">최근 추가된 강의가 없습니다.</p>
+    {% endif %}
+  </div>
+  
+  <!-- 최근 수강 신청 -->
+  <div class="dashboard-card">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-bold">최근 수강 신청</h2>
+    </div>
+    
+    {% if recent_data.recent_enrollments %}
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>학생</th>
+              <th>강의</th>
+              <th>진행률</th>
+              <th>신청일</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for enrollment in recent_data.recent_enrollments %}
+              <tr>
+                <td>{{ enrollment.student.username }}</td>
+                <td>{{ enrollment.course.title }}</td>
+                <td>
+                  <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ enrollment.progress }}%"></div>
+                  </div>
+                  <span class="text-xs text-gray-500">{{ enrollment.progress|floatformat:0 }}%</span>
+                </td>
+                <td>{{ enrollment.enrolled_at|date:"Y-m-d" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-gray-500 text-center py-4">최근 수강 신청이 없습니다.</p>
+    {% endif %}
+  </div>
+  
+  <!-- 대기 중인 강사 신청 -->
+  <div class="dashboard-card">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-bold">대기 중인 강사 신청</h2>
+      <a href="{% url 'admin-instructor-applications' %}?status=PENDING" class="text-blue-600 hover:text-blue-800 text-sm">더 보기</a>
+    </div>
+    
+    {% if recent_data.recent_instructor_applications %}
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>신청자</th>
+              <th>이메일</th>
+              <th>신청일</th>
+              <th>상태</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for application in recent_data.recent_instructor_applications %}
+              <tr>
+                <td>{{ application.user.username }}</td>
+                <td>{{ application.user.email }}</td>
+                <td>{{ application.created_at|date:"Y-m-d" }}</td>
+                <td>
+                  <span class="status-badge status-pending">{{ application.get_status_display }}</span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-gray-500 text-center py-4">대기 중인 강사 신청이 없습니다.</p>
+    {% endif %}
+  </div>
+  
+  <!-- 월별 통계 -->
+  <div class="dashboard-card col-span-1 lg:col-span-2">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-bold">월별 통계</h2>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>월</th>
+            <th>신규 가입자</th>
+            <th>신규 수강 신청</th>
+            <th>매출</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for month_stat in monthly_stats %}
+            <tr>
+              <td>{{ month_stat.month }}</td>
+              <td>{{ month_stat.signups|intcomma }}명</td>
+              <td>{{ month_stat.enrollments|intcomma }}건</td>
+              <td>₩{{ month_stat.revenue|intcomma }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+  // 대시보드 전용 JavaScript 추가 (필요 시)
+  document.addEventListener('DOMContentLoaded', function() {
+    // 초기화 코드
+    console.log('대시보드가 로드되었습니다.');
+    
+    // 차트 등의 추가 기능이 필요한 경우 여기에 구현
+  });
+</script>
+{% endblock %}
+

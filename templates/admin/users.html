@@ -1,0 +1,153 @@
+{% extends 'admin/base_admin.html' %}
+{% load humanize %}
+
+{% block admin_title %}사용자 관리{% endblock %}
+
+{% block admin_content %}
+<!-- 통계 카드 -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+  <div class="stat-card">
+    <div class="stat-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
+    </div>
+    <div>
+      <div class="stat-number">{{ stats.total_users|intcomma }}</div>
+      <div class="stat-label">전체 사용자</div>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-icon" style="background-color: #dbeafe; color: #1e40af;">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path d="M12 14l9-5-9-5-9 5 9 5z" />
+        <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
+      </svg>
+    </div>
+    <div>
+      <div class="stat-number">{{ stats.students_count|intcomma }}</div>
+      <div class="stat-label">학생</div>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-icon" style="background-color: #e0f2fe; color: #0369a1;">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+      </svg>
+    </div>
+    <div>
+      <div class="stat-number">{{ stats.instructors_count|intcomma }}</div>
+      <div class="stat-label">강사</div>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-icon" style="background-color: #dcfce7; color: #166534;">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </div>
+    <div>
+      <div class="stat-number">{{ stats.managers_count|intcomma }}</div>
+      <div class="stat-label">관리자</div>
+    </div>
+  </div>
+</div>
+
+<!-- 필터 및 검색 -->
+<div class="bg-white rounded-lg shadow-md p-4 mb-6">
+  <form method="get" class="flex flex-wrap gap-4 items-end">
+    <div>
+      <label for="role" class="block text-sm font-medium text-gray-700 mb-1">역할 필터</label>
+      <select id="role" name="role" class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+        <option value="" {% if not role_filter %}selected{% endif %}>전체</option>
+        <option value="Student" {% if role_filter == 'Student' %}selected{% endif %}>학생</option>
+        <option value="Instructor" {% if role_filter == 'Instructor' %}selected{% endif %}>강사</option>
+        <option value="manager" {% if role_filter == 'manager' %}selected{% endif %}>관리자</option>
+      </select>
+    </div>
+    
+    <div>
+      <label for="search" class="block text-sm font-medium text-gray-700 mb-1">검색</label>
+      <input type="text" id="search" name="q" value="{{ search_query }}" placeholder="이름 또는 이메일 검색" 
+             class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+    </div>
+    
+    <div>
+      <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+        적용
+      </button>
+      
+      <a href="{% url 'admin-users' %}" class="inline-flex items-center px-4 py-2 ml-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+        초기화
+      </a>
+    </div>
+  </form>
+</div>
+
+<!-- 사용자 테이블 -->
+<div class="bg-white rounded-lg shadow-md overflow-hidden">
+  {% if users %}
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 data-table">
+        <thead>
+          <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">사용자</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이메일</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">역할</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">가입일</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
+            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {% for user in users %}
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                    <span class="text-gray-500 font-medium">{{ user.username|first|upper }}</span>
+                  </div>
+                  <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-900">{{ user.username }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{{ user.email }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                  {% if user.role == 'Student' %}bg-blue-100 text-blue-800
+                  {% elif user.role == 'Instructor' %}bg-green-100 text-green-800
+                  {% else %}bg-purple-100 text-purple-800{% endif %}">
+                  {{ user.get_role_display }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ user.date_joined|date:"Y-m-d H:i" }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                  {% if user.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                  {{ user.is_active|yesno:"활성화,비활성화" }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <a href="{% url 'admin:accounts_user_change' user.id %}" class="text-blue-600 hover:text-blue-900">상세보기</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="p-6 text-center text-gray-500">
+      검색 결과가 없습니다.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

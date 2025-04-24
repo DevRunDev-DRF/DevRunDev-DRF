@@ -1,0 +1,249 @@
+{% extends 'admin/base_admin.html' %}
+{% load humanize %}
+
+{% block admin_title %}결제 관리{% endblock %}
+
+{% block admin_content %}
+<!-- 통계 카드 -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+  <div class="stat-card">
+    <div class="stat-icon" style="background-color: #e0e7ff; color: #4f46e5;">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+    </div>
+    <div>
+      <div class="stat-number">{{ stats.total_payments|intcomma }}</div>
+      <div class="stat-label">총 결제 건수</div>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-icon" style="background-color: #dcfce7; color: #166534;">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </div>
+    <div>
+      <div class="stat-number">₩{{ stats.total_revenue|intcomma }}</div>
+      <div class="stat-label">총 매출</div>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-icon" style="background-color: #dbeafe; color: #1e40af;">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </div>
+    <div>
+      <div class="stat-number">{{ stats.successful_payments|intcomma }}</div>
+      <div class="stat-label">성공한 결제</div>
+    </div>
+  </div>
+</div>
+
+<!-- 필터 및 검색 -->
+<div class="bg-white rounded-lg shadow-md p-4 mb-6">
+  <form method="get" class="flex flex-wrap gap-4 items-end">
+    <div>
+      <label for="status" class="block text-sm font-medium text-gray-700 mb-1">상태 필터</label>
+      <select id="status" name="status" class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+        <option value="" {% if not status_filter %}selected{% endif %}>전체</option>
+        <option value="ready" {% if status_filter == 'ready' %}selected{% endif %}>결제 대기</option>
+        <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>결제 완료</option>
+        <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>결제 취소</option>
+        <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>결제 실패</option>
+      </select>
+    </div>
+    
+    <div>
+      <label for="search" class="block text-sm font-medium text-gray-700 mb-1">검색</label>
+      <input type="text" id="search" name="q" value="{{ search_query }}" placeholder="이름, 이메일 또는 주문번호 검색" 
+             class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+    </div>
+    
+    <div>
+      <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+        적용
+      </button>
+      
+      <a href="{% url 'admin-payments' %}" class="inline-flex items-center px-4 py-2 ml-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+        초기화
+      </a>
+    </div>
+  </form>
+</div>
+
+<!-- 결제 목록 -->
+<div class="bg-white rounded-lg shadow-md overflow-hidden">
+  {% if payments %}
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 data-table">
+        <thead>
+          <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">주문번호</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">결제자</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">금액</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">결제 방식</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">결제일</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
+            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {% for payment in payments %}
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{{ payment.merchant_uid }}</div>
+                <div class="text-xs text-gray-500">{% if payment.imp_uid %}({{ payment.imp_uid }}){% endif %}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0 h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
+                    <span class="text-gray-500 font-medium">{{ payment.user.username|first|upper }}</span>
+                  </div>
+                  <div class="ml-3">
+                    <div class="text-sm font-medium text-gray-900">{{ payment.user.username }}</div>
+                    <div class="text-xs text-gray-500">{{ payment.user.email }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                ₩{{ payment.amount|intcomma }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                카드 결제
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ payment.created_at|date:"Y-m-d H:i" }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                  {% if payment.status == 'paid' %}bg-green-100 text-green-800
+                  {% elif payment.status == 'ready' %}bg-yellow-100 text-yellow-800
+                  {% elif payment.status == 'cancelled' %}bg-gray-100 text-gray-800
+                  {% else %}bg-red-100 text-red-800{% endif %}">
+                  {{ payment.get_status_display }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <button type="button" class="text-blue-600 hover:text-blue-900"
+                        onclick="openPaymentModal('{{ payment.id }}')">상세 보기</button>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="p-6 text-center text-gray-500">
+      검색 결과가 없습니다.
+    </div>
+  {% endif %}
+</div>
+
+<!-- 모달 팝업 -->
+<div id="payment-modal" class="fixed inset-0 bg-gray-500 bg-opacity-75 hidden flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 overflow-hidden">
+    <div class="px-6 py-4 bg-gray-50 border-b flex justify-between items-center">
+      <h3 class="text-lg font-medium text-gray-900">결제 상세 정보</h3>
+      <button type="button" class="text-gray-400 hover:text-gray-500" onclick="closePaymentModal()">
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    <div id="payment-modal-content" class="p-6 max-h-[70vh] overflow-y-auto">
+      <!-- 모달 내용이 여기에 동적으로 로드됩니다 -->
+      <div class="animate-pulse">
+        <div class="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+        <div class="h-4 bg-gray-200 rounded w-1/2 mb-6"></div>
+        <div class="h-32 bg-gray-200 rounded mb-6"></div>
+        <div class="h-10 bg-gray-200 rounded mb-2"></div>
+      </div>
+    </div>
+    <div class="px-6 py-4 bg-gray-50 border-t flex justify-end">
+      <button type="button" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+              onclick="closePaymentModal()">
+        닫기
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+  // 모달 관련 함수
+  function openPaymentModal(paymentId) {
+    document.getElementById('payment-modal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; // 배경 스크롤 방지
+    
+    // 여기서 AJAX 요청을 통해 상세 정보를 가져오거나 미리 준비된 템플릿을 사용할 수 있습니다
+    // 예시로 간단한 데이터 표시
+    {% for payment in payments %}
+    if ('{{ payment.id }}' === paymentId) {
+      const content = `
+        <div>
+          <div class="mb-6">
+            <h4 class="text-lg font-medium text-gray-900 mb-2">결제 정보</h4>
+            <p class="mb-1"><span class="font-medium">주문번호:</span> {{ payment.merchant_uid }}</p>
+            {% if payment.imp_uid %}
+            <p class="mb-1"><span class="font-medium">결제번호:</span> {{ payment.imp_uid }}</p>
+            {% endif %}
+            <p class="mb-1"><span class="font-medium">결제자:</span> {{ payment.user.username }} ({{ payment.user.email }})</p>
+            <p class="mb-1"><span class="font-medium">결제일시:</span> {{ payment.created_at|date:"Y년 m월 d일 H:i:s" }}</p>
+            <p class="mb-1"><span class="font-medium">금액:</span> ₩{{ payment.amount|intcomma }}</p>
+            <p>
+              <span class="font-medium">상태:</span> 
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                {% if payment.status == 'paid' %}bg-green-100 text-green-800
+                {% elif payment.status == 'ready' %}bg-yellow-100 text-yellow-800
+                {% elif payment.status == 'cancelled' %}bg-gray-100 text-gray-800
+                {% else %}bg-red-100 text-red-800{% endif %}">
+                {{ payment.get_status_display }}
+              </span>
+            </p>
+          </div>
+          
+          <div class="mb-6">
+            <h4 class="text-lg font-medium text-gray-900 mb-2">결제 상품</h4>
+            <div class="bg-gray-50 p-4 rounded">
+              {% for item in payment.items.all %}
+                <div class="mb-3">
+                  <p class="font-medium">{{ item.course.title }}</p>
+                  <p class="text-sm text-gray-500">₩{{ item.price|intcomma }}</p>
+                </div>
+              {% empty %}
+                <p class="text-gray-500">결제 상품 정보가 없습니다.</p>
+              {% endfor %}
+            </div>
+          </div>
+          
+          {% if payment.status == 'paid' %}
+          <div>
+            <form method="post" action="{% url 'admin:cancel-payment' payment.pk %}" 
+                  onsubmit="return confirm('정말로 이 결제를 취소하시겠습니까? 이 작업은 되돌릴 수 없습니다.')">
+              {% csrf_token %}
+              <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                결제 취소
+              </button>
+            </form>
+          </div>
+          {% endif %}
+        </div>
+      `;
+      
+      document.getElementById('payment-modal-content').innerHTML = content;
+    }
+    {% endfor %}
+  }
+  
+  function closePaymentModal() {
+    document.getElementById('payment-modal').classList.add('hidden');
+    document.body.style.overflow = ''; // 배경 스크롤 복원
+  }
+</script>
+{% endblock %}
