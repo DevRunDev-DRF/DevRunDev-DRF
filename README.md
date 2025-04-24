@@ -139,7 +139,13 @@ cp env.dev.example .env
 uv run python manage.py migrate
 ```
 
-### 8. seed_data command
+### 8. 디렉토리 생성
+
+```sh
+uv run python setup_directories.py
+```
+
+### 9. seed_data command
 
 ```sh
 uv run python manage.py seed_data
