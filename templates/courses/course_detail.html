@@ -136,10 +136,8 @@
                                         <span>{{ lesson.title }}</span>
                                     </div>
                                     
-                                    {% if is_enrolled or user == course.instructor %}
-                                        <a href="{% url 'courses:lesson-detail' lesson.id %}" class="text-blue-600 hover:underline">
-                                            학습하기
-                                        </a>
+                                    {% if is_enrolled or user == course.instructor or user.role == 'manager' or user.is_staff %}
+                                        <a href="{% url 'courses:lesson-detail' lesson.id %}" class="text-blue-600 hover:underline">학습하기</a>
                                     {% else %}
                                         <span class="text-sm text-gray-500">수강 신청 후 학습 가능</span>
                                     {% endif %}

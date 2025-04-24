@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Count, Sum, Avg
 from django.utils import timezone
+from django.contrib import messages
 from datetime import timedelta
 
 from accounts.models import User, InstructorApplication
@@ -314,3 +315,44 @@ def admin_payments(request):
     }
 
     return render(request, "admin/payments.html", context)
+
+
+@login_required
+@user_passes_test(is_manager)
+def approve_instructor_application(request, application_id):
+    """강사 신청 승인 처리"""
+    if request.method == "POST":
+        try:
+            application = InstructorApplication.objects.get(pk=application_id)
+            application.approve()
+            messages.success(
+                request, f"{application.user.username}님의 강사 신청이 승인되었습니다."
+            )
+        except InstructorApplication.DoesNotExist:
+            messages.error(request, "존재하지 않는 신청입니다.")
+        except Exception as e:
+            messages.error(request, f"승인 처리 중 오류가 발생했습니다: {str(e)}")
+
+    # 관리자 대시보드의 강사 신청 관리 페이지로 리다이렉트
+    return redirect("admin-instructor-applications")
+
+
+@login_required
+@user_passes_test(is_manager)
+def reject_instructor_application(request, application_id):
+    """강사 신청 거부 처리"""
+    if request.method == "POST":
+        try:
+            application = InstructorApplication.objects.get(pk=application_id)
+            application.status = InstructorApplication.Status.REJECTED
+            application.save()
+            messages.success(
+                request, f"{application.user.username}님의 강사 신청이 거부되었습니다."
+            )
+        except InstructorApplication.DoesNotExist:
+            messages.error(request, "존재하지 않는 신청입니다.")
+        except Exception as e:
+            messages.error(request, f"거부 처리 중 오류가 발생했습니다: {str(e)}")
+
+    # 관리자 대시보드의 강사 신청 관리 페이지로 리다이렉트
+    return redirect("admin-instructor-applications")

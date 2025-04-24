@@ -149,7 +149,8 @@ class InstructorApplicationAdmin(admin.ModelAdmin):
         self.message_user(
             request, f"{application.user.username}의 강사 신청이 승인되었습니다."
         )
-        return redirect("admin:accounts_instructorapplication_changelist")
+        # 관리자 대시보드 페이지로 리다이렉트
+        return redirect("admin-instructor-applications")
 
     def reject_application(self, request, application_id):
         from django.shortcuts import redirect
@@ -160,4 +161,5 @@ class InstructorApplicationAdmin(admin.ModelAdmin):
         self.message_user(
             request, f"{application.user.username}의 강사 신청이 거부되었습니다."
         )
-        return redirect("admin:accounts_instructorapplication_changelist")
+        # 관리자 대시보드 페이지로 리다이렉트
+        return redirect("admin-instructor-applications")

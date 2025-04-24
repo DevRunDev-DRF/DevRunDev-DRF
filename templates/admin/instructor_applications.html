@@ -128,11 +128,13 @@
                 {% if application.status == 'PENDING' %}
                   <button type="button" class="text-blue-600 hover:text-blue-900 mr-2"
                           onclick="openApplicationModal('{{ application.id }}')">상세 보기</button>
-                  <form method="post" action="{% url 'admin:approve-instructor-application' application.pk %}" class="inline">
+                  
+                  <!-- 여기서 관리자 대시보드로 리다이렉트하는 URL로 수정 -->
+                  <form method="post" action="{% url 'admin-instructor-approve' application.pk %}" class="inline">
                     {% csrf_token %}
                     <button type="submit" class="text-green-600 hover:text-green-900 mr-2">승인</button>
                   </form>
-                  <form method="post" action="{% url 'admin:reject-instructor-application' application.pk %}" class="inline">
+                  <form method="post" action="{% url 'admin-instructor-reject' application.pk %}" class="inline">
                     {% csrf_token %}
                     <button type="submit" class="text-red-600 hover:text-red-900">거부</button>
                   </form>
@@ -240,14 +242,14 @@
           
           {% if application.status == 'PENDING' %}
           <div class="mt-6 flex space-x-4">
-            <form method="post" action="{% url 'admin:approve-instructor-application' application.pk %}" class="inline">
+            <form method="post" action="{% url 'admin-instructor-approve' application.pk %}" class="inline">
               {% csrf_token %}
               <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
                 강사 승인
               </button>
             </form>
             
-            <form method="post" action="{% url 'admin:reject-instructor-application' application.pk %}" class="inline">
+            <form method="post" action="{% url 'admin-instructor-reject' application.pk %}" class="inline">
               {% csrf_token %}
               <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
                 강사 거부

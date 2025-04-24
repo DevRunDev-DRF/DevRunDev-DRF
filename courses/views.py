@@ -705,6 +705,11 @@ class LessonDetailView(DetailView):
         # 강사 여부 확인
         is_instructor = request.user == lesson.section.course.instructor
 
+        # 관리자 여부 확인
+        is_manager = request.user.is_staff or (
+            hasattr(request.user, "role") and request.user.role == "manager"
+        )
+
         # 수강 여부 확인
         is_enrolled = Enrollment.objects.filter(
             student=request.user,
@@ -713,7 +718,7 @@ class LessonDetailView(DetailView):
         ).exists()
 
         # 수강생 또는 강사가 아닌 경우 접근 제한
-        if not (is_enrolled or is_instructor):
+        if not (is_enrolled or is_instructor or is_manager):
             messages.error(
                 request, "이 강의를 수강 중인 학생 또는 강사만 접근할 수 있습니다."
             )
