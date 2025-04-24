@@ -93,9 +93,11 @@
                 {% for item in cart_items %}
                     <div class="p-4 flex items-center justify-between">
                         <div class="flex items-center space-x-4">
-                            <img src="{{ item.course.thumbnail.url|default:'/static/images/default.jpg' }}" 
-                                 alt="{{ item.course.title }}" 
-                                 class="w-20 h-16 object-cover rounded">
+                            <div class="w-20 h-16 overflow-hidden rounded">
+                                <img src="{{ item.course.thumbnail.url|default:'/static/images/default.jpg' }}" 
+                                    alt="{{ item.course.title }}" 
+                                    class="w-20 h-16 object-cover">
+                            </div>
                             <div>
                                 <h3 class="font-bold text-lg">{{ item.course.title }}</h3>
                                 <p class="text-gray-500">{{ item.course.instructor.username }}</p>

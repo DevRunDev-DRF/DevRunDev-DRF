@@ -1,6 +1,10 @@
 <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
     <a href="{% url 'courses:course-detail' course.id %}">
-        <img src="{{ course.thumbnail.url|default:'/static/images/default.jpg' }}" alt="{{ course.title }}" class="w-full h-40 object-cover">
+        <div class="w-full h-40 overflow-hidden">
+            <img src="{{ course.thumbnail.url|default:'/static/images/default.jpg' }}" 
+                 alt="{{ course.title }}" 
+                 class="w-full h-40 object-cover">
+        </div>
     </a>
     <div class="p-4">
         <a href="{% url 'courses:course-detail' course.id %}" class="block">

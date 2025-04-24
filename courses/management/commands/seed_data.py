@@ -1,10 +1,15 @@
 import random
 import re
+import os
 from datetime import timedelta
+from io import BytesIO
+import urllib.request
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
+from django.core.files.base import ContentFile
+from django.conf import settings
 
 from accounts.models import User
 from courses.models import Course, Lesson, Section
@@ -17,6 +22,7 @@ COURSE_DATA = [
         "title": "파이썬 프로그래밍 기초",
         "description": "파이썬 언어를 처음부터 배워 프로그래밍의 기초 개념을 익히는 강의입니다. 변수, 데이터 타입, 조건문, 반복문 등 기본 개념부터 함수와 클래스까지 다룹니다.",
         "price": 49900,
+        "color": (65, 105, 225),  # 로얄 블루
         "sections": [
             {
                 "title": "파이썬 소개 및 환경설정",
@@ -130,10 +136,16 @@ COURSE_DATA = [
                     {
                         "text": "파이썬의 while 반복문에 대한 설명으로 올바른 것은?",
                         "choices": [
-                            {"text": "조건이 참인 동안 계속 반복한다", "is_correct": True},
+                            {
+                                "text": "조건이 참인 동안 계속 반복한다",
+                                "is_correct": True,
+                            },
                             {"text": "정해진 횟수만큼 반복한다", "is_correct": False},
                             {"text": "항상 최소 한 번은 실행된다", "is_correct": False},
-                            {"text": "반복 횟수를 미리 정할 수 있다", "is_correct": False},
+                            {
+                                "text": "반복 횟수를 미리 정할 수 있다",
+                                "is_correct": False,
+                            },
                         ],
                     },
                 ],
@@ -145,6 +157,7 @@ COURSE_DATA = [
         "title": "HTML과 CSS로 시작하는 웹개발",
         "description": "웹 개발의 기초가 되는 HTML과 CSS를 배우는 강의입니다. 웹 페이지 구조 설계부터 스타일링까지 실습을 통해 학습합니다.",
         "price": 39900,
+        "color": (255, 69, 0),  # 오렌지
         "sections": [
             {
                 "title": "HTML 기초",
@@ -267,6 +280,7 @@ COURSE_DATA = [
         "title": "실전 JavaScript 프로그래밍",
         "description": "JavaScript의 핵심 개념과 DOM 조작, 이벤트 처리, 비동기 프로그래밍 등을 배우는 강의입니다. 실제 프로젝트를 통해 실습합니다.",
         "price": 59900,
+        "color": (255, 215, 0),  # 골드
         "sections": [
             {
                 "title": "JavaScript 기초",
@@ -402,9 +416,17 @@ class Command(BaseCommand):
 
         with transaction.atomic():
             # 기존 데이터 초기화 (선택 사항)
-            if options["clear"] or input("기존 데이터를 모두 삭제하고 진행하시겠습니까? (y/n): ").lower() == "y":
+            if (
+                options["clear"]
+                or input(
+                    "기존 데이터를 모두 삭제하고 진행하시겠습니까? (y/n): "
+                ).lower()
+                == "y"
+            ):
                 self.clear_data()
-                self.stdout.write(self.style.SUCCESS("기존 데이터가 모두 삭제되었습니다."))
+                self.stdout.write(
+                    self.style.SUCCESS("기존 데이터가 모두 삭제되었습니다.")
+                )
 
             # 1. 사용자 생성
             students = self.create_students(10)
@@ -429,12 +451,27 @@ class Command(BaseCommand):
                         price=template["price"],
                         status="approved",
                     )
+
+                    # 섹션 생성
+                    sections = []
+                    # 첫 번째 섹션의 첫 번째 레슨에서 유튜브 ID를 가져와 썸네일 설정
+                    try:
+                        first_lesson_url = template["sections"][0]["lessons"][0][
+                            "video_url"
+                        ]
+                        self.set_youtube_thumbnail(course, first_lesson_url)
+                    except Exception as e:
+                        # 유튜브 썸네일 설정에 실패하면 색상 기반 썸네일 생성
+                        self.create_and_set_thumbnail(course, template["color"])
+
                     all_courses.append(course)
 
                     # 섹션 생성
                     sections = []
                     for k, section_data in enumerate(template["sections"]):
-                        section = Section.objects.create(course=course, title=section_data["title"], order=k + 1)
+                        section = Section.objects.create(
+                            course=course, title=section_data["title"], order=k + 1
+                        )
                         sections.append(section)
 
                         # 레슨 생성
@@ -450,8 +487,12 @@ class Command(BaseCommand):
                     if "quiz_data" in template:
                         for quiz_data in template["quiz_data"]:
                             # 섹션과 레슨 인덱스 가져오기
-                            section_index = quiz_data.get("section_index", 0)  # 기본값은 첫 번째 섹션
-                            lesson_index = quiz_data.get("lesson_index", 0)  # 기본값은 첫 번째 레슨
+                            section_index = quiz_data.get(
+                                "section_index", 0
+                            )  # 기본값은 첫 번째 섹션
+                            lesson_index = quiz_data.get(
+                                "lesson_index", 0
+                            )  # 기본값은 첫 번째 레슨
 
                             # 인덱스 범위 체크
                             if section_index < len(sections):
@@ -461,11 +502,17 @@ class Command(BaseCommand):
 
                             # 해당 섹션의 레슨 가져오기
                             if target_section:
-                                target_lessons = Lesson.objects.filter(section=target_section).order_by("order")
+                                target_lessons = Lesson.objects.filter(
+                                    section=target_section
+                                ).order_by("order")
                                 if lesson_index < len(target_lessons):
                                     target_lesson = target_lessons[lesson_index]
                                 else:
-                                    target_lesson = target_lessons.first() if target_lessons.exists() else None
+                                    target_lesson = (
+                                        target_lessons.first()
+                                        if target_lessons.exists()
+                                        else None
+                                    )
                             else:
                                 target_lesson = None
 
@@ -480,14 +527,18 @@ class Command(BaseCommand):
                             )
 
                             # 문제 및 선택지 생성
-                            for q_idx, question_data in enumerate(quiz_data["questions"]):
+                            for q_idx, question_data in enumerate(
+                                quiz_data["questions"]
+                            ):
                                 question = Question.objects.create(
                                     quiz=quiz,
                                     text=question_data["text"],
                                     order=q_idx + 1,
                                 )
 
-                                for c_idx, choice_data in enumerate(question_data["choices"]):
+                                for c_idx, choice_data in enumerate(
+                                    question_data["choices"]
+                                ):
                                     Choice.objects.create(
                                         question=question,
                                         text=choice_data["text"],
@@ -503,6 +554,82 @@ class Command(BaseCommand):
             self.print_summary()
 
         self.stdout.write(self.style.SUCCESS("가상 데이터 생성이 완료되었습니다!"))
+
+    def set_youtube_thumbnail(self, course, youtube_url):
+        """유튜브 동영상 썸네일을 강의 썸네일로 설정"""
+        try:
+            # 유튜브 비디오 ID 추출
+            video_id = self.get_youtube_id(youtube_url)
+            if not video_id:
+                raise ValueError(f"유효한 YouTube ID를 찾을 수 없습니다: {youtube_url}")
+
+            # 유튜브 썸네일 URL
+            thumbnail_url = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
+
+            # 썸네일 이미지 다운로드
+            try:
+                image_content = urllib.request.urlopen(thumbnail_url).read()
+            except:
+                # maxresdefault.jpg가 없으면 hqdefault.jpg 시도
+                thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+                image_content = urllib.request.urlopen(thumbnail_url).read()
+
+            # 이미지 파일 이름 생성
+            image_name = f"course_{course.id}_thumbnail.jpg"
+
+            # Course 모델에 이미지 저장
+            course.thumbnail.save(image_name, ContentFile(image_content), save=True)
+
+            print(f"YouTube 썸네일 설정 완료: {course.title}")
+            return True
+
+        except Exception as e:
+            print(f"YouTube 썸네일 가져오기 실패: {e}")
+            return False
+
+    def create_and_set_thumbnail(self, course, color):
+        """강의 썸네일 이미지 생성 및 설정"""
+        try:
+            from PIL import Image, ImageDraw, ImageFont
+
+            # 임시 이미지 생성 (1280x720)
+            width, height = 1280, 720
+            image = Image.new("RGB", (width, height), color)
+            draw = ImageDraw.Draw(image)
+
+            # 배경에 패턴 추가 (선택적)
+            for i in range(20):
+                x1 = random.randint(0, width)
+                y1 = random.randint(0, height)
+                x2 = random.randint(0, width)
+                y2 = random.randint(0, height)
+                draw.line((x1, y1, x2, y2), fill=(255, 255, 255, 50), width=2)
+
+            # 강의 제목 추가
+            title = course.title
+            # PIL에서 TTF 폰트를 사용할 수 있으나, 기본 폰트로 진행
+            # 텍스트 위치 계산 (중앙 정렬)
+            text_width = width // 2
+            text_height = height // 2
+
+            # 텍스트 그리기
+            draw.text(
+                (text_width, text_height), title, fill=(255, 255, 255), anchor="mm"
+            )
+
+            # 이미지를 저장하고 강의 모델에 할당
+            image_io = BytesIO()
+            image.save(image_io, format="JPEG", quality=90)
+            image_name = f"course_{course.id}_thumbnail.jpg"
+
+            # 이미지 파일 저장 및 모델에 할당
+            course.thumbnail.save(
+                image_name, ContentFile(image_io.getvalue()), save=True
+            )
+
+            print(f"Created thumbnail for course: {course.title}")
+        except Exception as e:
+            print(f"Error creating thumbnail: {e}")
 
     def clear_data(self):
         """기존 데이터를 모두 삭제합니다."""
@@ -539,7 +666,9 @@ class Command(BaseCommand):
             )
             students.append(student)
 
-        self.stdout.write(self.style.SUCCESS(f"{len(students)}명의 학생이 생성되었습니다."))
+        self.stdout.write(
+            self.style.SUCCESS(f"{len(students)}명의 학생이 생성되었습니다.")
+        )
         return students
 
     def create_instructors(self, count):
@@ -579,7 +708,9 @@ class Command(BaseCommand):
             )
             instructors.append(instructor)
 
-        self.stdout.write(self.style.SUCCESS(f"{len(instructors)}명의 강사가 생성되었습니다."))
+        self.stdout.write(
+            self.style.SUCCESS(f"{len(instructors)}명의 강사가 생성되었습니다.")
+        )
         return instructors
 
     def create_managers(self, count):
@@ -606,7 +737,9 @@ class Command(BaseCommand):
             )
             managers.append(manager)
 
-        self.stdout.write(self.style.SUCCESS(f"{len(managers)}명의 관리자가 생성되었습니다."))
+        self.stdout.write(
+            self.style.SUCCESS(f"{len(managers)}명의 관리자가 생성되었습니다.")
+        )
         return managers
 
     def create_quiz_attempt(self, quiz, student):
@@ -631,10 +764,16 @@ class Command(BaseCommand):
                 selected_choice = choices.filter(is_correct=True).first()
             else:
                 wrong_choices = choices.filter(is_correct=False)
-                selected_choice = random.choice(list(wrong_choices)) if wrong_choices.exists() else choices.first()
+                selected_choice = (
+                    random.choice(list(wrong_choices))
+                    if wrong_choices.exists()
+                    else choices.first()
+                )
 
             if selected_choice:
-                Answer.objects.create(attempt=attempt, question=question, selected_choice=selected_choice)
+                Answer.objects.create(
+                    attempt=attempt, question=question, selected_choice=selected_choice
+                )
 
         # 점수 계산은 Answer 모델의 save() 메소드에서 자동으로 처리됨
         return attempt
@@ -654,9 +793,15 @@ class Command(BaseCommand):
         """생성된 데이터의 요약 정보를 출력합니다."""
         self.stdout.write("\n=== 데이터 생성 요약 ===")
         self.stdout.write(f"총 사용자: {User.objects.count()}명")
-        self.stdout.write(f"- 학생: {User.objects.filter(role=User.Role.STUDENT).count()}명")
-        self.stdout.write(f"- 강사: {User.objects.filter(role=User.Role.INSTRUCTOR).count()}명")
-        self.stdout.write(f"- 관리자: {User.objects.filter(role=User.Role.MANAGER).count()}명")
+        self.stdout.write(
+            f"- 학생: {User.objects.filter(role=User.Role.STUDENT).count()}명"
+        )
+        self.stdout.write(
+            f"- 강사: {User.objects.filter(role=User.Role.INSTRUCTOR).count()}명"
+        )
+        self.stdout.write(
+            f"- 관리자: {User.objects.filter(role=User.Role.MANAGER).count()}명"
+        )
         self.stdout.write(f"총 강좌: {Course.objects.count()}개")
         self.stdout.write(f"총 섹션: {Section.objects.count()}개")
         self.stdout.write(f"총 레슨: {Lesson.objects.count()}개")

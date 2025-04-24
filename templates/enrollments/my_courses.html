@@ -7,9 +7,11 @@
     {% for enrollment in enrollments %}
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
             <a href="{% url 'courses:course-detail' enrollment.course.id %}">
-                <img src="{{ enrollment.course.thumbnail.url|default:'/static/images/default.jpg' }}" 
-                     alt="{{ enrollment.course.title }}" 
-                     class="w-full h-40 object-cover">
+                <div class="w-full h-40 overflow-hidden">
+                    <img src="{{ enrollment.course.thumbnail.url|default:'/static/images/default.jpg' }}" 
+                         alt="{{ enrollment.course.title }}" 
+                         class="w-full h-40 object-cover">
+                </div>
             </a>
             <div class="p-4">
                 <a href="{% url 'courses:course-detail' enrollment.course.id %}">
