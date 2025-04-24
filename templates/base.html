@@ -22,7 +22,20 @@
     <!-- 네비게이션 바 -->
     <nav class="bg-blue-700 text-white shadow-md">
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-            <a href="{% url 'home' %}" class="text-xl font-bold">DevRunDev</a>
+            <div class="flex items-center space-x-6">
+                <a href="{% url 'home' %}" class="text-xl font-bold">DevRunDev</a>
+                
+                <!-- 주요 네비게이션 링크 -->
+                <div class="hidden md:flex items-center space-x-4">
+                    <a href="{% url 'courses:course-list' %}" class="hover:text-blue-200">강의</a>
+                    
+                    {% if user.is_authenticated %}
+                        {% if user.is_staff or user.role == 'manager' %}
+                            <a href="{% url 'admin-dashboard' %}" class="hover:text-blue-200">관리자 대시보드</a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
             
             <div class="flex items-center space-x-4">
                 {% if user.is_authenticated %}
@@ -38,6 +51,10 @@
                             
                             {% if user.is_instructor %}
                                 <a href="{% url 'courses:instructor-dashboard' %}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">강사 대시보드</a>
+                            {% endif %}
+                            
+                            {% if user.is_staff or user.role == 'manager' %}
+                                <a href="{% url 'admin-dashboard' %}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">관리자 대시보드</a>
                             {% endif %}
                             
                             {% if user.is_student %}

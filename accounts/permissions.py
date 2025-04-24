@@ -20,3 +20,14 @@ class IsManager(permissions.BasePermission):
             request.user.is_authenticated
             and request.user.role == request.user.Role.MANAGER
         )
+
+
+class IsStaffOrManager(permissions.BasePermission):
+    """
+    관리자 또는 매니저만 접근 가능한 권한
+    """
+
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and (
+            request.user.is_staff or request.user.role == request.user.Role.MANAGER
+        )
