@@ -286,3 +286,4 @@ SOCIALACCOUNT_AUTO_SIGNUP = True
 
 # 유저명 중복 방지
 ACCOUNT_UNIQUE_EMAIL = True
+SOCIALACCOUNT_ADAPTER = "accounts.adapters.CustomSocialAccountAdapter"
