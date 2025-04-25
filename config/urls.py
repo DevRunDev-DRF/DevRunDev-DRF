@@ -41,6 +41,7 @@ urlpatterns = [
     path("api-auth/", include("rest_framework.urls")),
     # 앱별 URL
     path("accounts/", include("accounts.urls")),
+    path("accounts/", include("allauth.urls")),
     path("courses/", include("courses.urls")),
     path("quizzes/", include("quizzes.urls")),
     path("enrollments/", include("enrollments.urls")),
