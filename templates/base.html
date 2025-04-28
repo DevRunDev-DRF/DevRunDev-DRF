@@ -61,8 +61,8 @@
                                 <!-- 내 강의, 내 수료증 링크 수정 - 실제 URL 패턴에 맞게 조정 필요 -->
                                 <a href="{% url 'enrollments:my_courses' %}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">내 강의</a>
                                 <a href="{% url 'enrollments:my_certificates' %}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">내 수료증</a>
+                                <a href="{% url 'enrollments:payment-list' %}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">결제 내역</a>
                             {% endif %}
-                            
                             <a href="{% url 'accounts:logout' %}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">로그아웃</a>
                         </div>
                     </div>

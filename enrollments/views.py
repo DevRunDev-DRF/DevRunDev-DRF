@@ -9,6 +9,10 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.utils import timezone
+from django.http import JsonResponse
+from django.urls import reverse
+
 
 from .models import Enrollment, LessonProgress, Certificate, CartItem, Payment
 from .serializers import (
@@ -787,3 +791,189 @@ def checkout_free_course(request):
         messages.info(request, "이미 수강 중인 강의입니다.")
 
     return redirect("enrollments:my_courses")
+
+
+@login_required
+def payment_list_view(request):
+    """사용자의 결제 내역 목록 페이지"""
+    payments = Payment.objects.filter(user=request.user).order_by("-created_at")
+
+    context = {
+        "payments": payments,
+        "cart_count": CartItem.objects.filter(user=request.user).count(),
+    }
+    return render(request, "enrollments/my_payments.html", context)
+
+
+# 결제 취소 요청 처리 (HTMX 요청)
+@login_required
+def payment_cancel_request(request, payment_id):
+    """결제 취소 요청 처리 (모달 표시용)"""
+    payment = get_object_or_404(Payment, id=payment_id, user=request.user)
+
+    # 이미 취소된 결제인지 확인
+    if payment.status != "paid":
+        return HttpResponse(
+            '<span class="text-red-600">이미 취소된 결제입니다.</span>',
+            content_type="text/html",
+        )
+
+    # 취소 가능한 상태인지 확인 (예: 30일 이내 결제만 취소 가능)
+    if timezone.now() - payment.created_at > timezone.timedelta(days=30):
+        return HttpResponse(
+            '<span class="text-red-600">결제일로부터 30일이 지나 취소할 수 없습니다.</span>',
+            content_type="text/html",
+        )
+
+    # 취소 가능한 결제인 경우
+    return HttpResponse(
+        '<span id="payment-{}-actions"></span>'.format(payment.id),
+        content_type="text/html",
+    )
+
+
+# 결제 취소 처리 함수
+@login_required
+def payment_cancel_view(request):
+    """결제 취소 처리"""
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "잘못된 요청 방식입니다."})
+
+    payment_id = request.POST.get("payment_id")
+    reason = request.POST.get("reason", "사용자 요청")
+
+    try:
+        payment = Payment.objects.get(id=payment_id, user=request.user, status="paid")
+
+        # 결제 취소 가능 여부 다시 확인
+        if timezone.now() - payment.created_at > timezone.timedelta(days=30):
+            return JsonResponse(
+                {
+                    "success": False,
+                    "message": "결제일로부터 30일이 지나 취소할 수 없습니다.",
+                }
+            )
+
+        # 아임포트 API를 통한 결제 취소 요청
+        if settings.DEBUG or settings.SKIP_PAYMENT_VERIFICATION:
+            # 개발 환경에서는 실제 결제 취소 API를 호출하지 않고 내부적으로만 처리
+            cancel_success = True
+            error_message = None
+        else:
+            # 실제 환경에서 아임포트 결제 취소 API 호출
+            try:
+                iamport = Iamport(
+                    imp_key=settings.PORTONE_API_KEY,
+                    imp_secret=settings.PORTONE_API_SECRET,
+                )
+
+                cancel_result = iamport.cancel(
+                    imp_uid=payment.imp_uid,
+                    merchant_uid=payment.merchant_uid,
+                    amount=payment.amount,
+                    reason=reason,
+                )
+
+                cancel_success = cancel_result.get("status") == "cancelled"
+                error_message = None
+            except Exception as e:
+                cancel_success = False
+                error_message = str(e)
+
+        if cancel_success:
+            # 결제 취소 성공 시 DB 업데이트
+            with transaction.atomic():
+                # 1. Payment 상태 업데이트
+                payment.status = "cancelled"
+                payment.save()
+
+                # 2. 관련 강의 목록 저장 (결과 페이지 표시용)
+                cancelled_courses = []
+                courses = []
+                for cart_item in payment.cart_items.all():
+                    course = cart_item.course
+                    courses.append(course)
+                    cancelled_courses.append({"id": course.id, "title": course.title})
+
+                # 3. 연관된 수강 신청 상태를 '수강 취소'로 변경
+                enrollments_to_update = Enrollment.objects.filter(
+                    student=request.user, course__in=courses
+                )
+                print(f"업데이트할 수강 신청 개수: {enrollments_to_update.count()}")
+                print(
+                    f"업데이트할 수강 신청 목록: {list(enrollments_to_update.values('id', 'course__title'))}"
+                )
+
+                # 상태를 '수강 취소'로 변경
+                updated_count = enrollments_to_update.update(status="dropped")
+                print(f"실제 업데이트된 수강 신청 개수: {updated_count}")
+
+                # 4. 이메일 발송 (선택 사항)
+                try:
+                    from .utils import (
+                        send_payment_cancel_email,
+                        send_payment_cancel_admin_notification,
+                    )
+
+                    # 사용자에게 이메일 발송
+                    send_payment_cancel_email(request.user, payment, courses)
+
+                    # 관리자에게 알림 이메일 발송
+                    send_payment_cancel_admin_notification(payment, courses, reason)
+                except Exception as e:
+                    # 이메일 전송 실패해도 결제 취소는 계속 진행
+                    print(f"Error sending payment cancel email: {e}")
+
+            # JSON 응답 반환
+            return JsonResponse(
+                {
+                    "success": True,
+                    "message": f"결제가 성공적으로 취소되었습니다. {updated_enrollments}개 강의의 수강 상태가 취소되었습니다.",
+                    "cancelled_courses": cancelled_courses,
+                    "redirect_url": reverse(
+                        "enrollments:payment-cancel-complete", args=[payment.id]
+                    ),
+                }
+            )
+        else:
+            # 결제 취소 실패
+            return JsonResponse(
+                {
+                    "success": False,
+                    "message": f'결제 취소에 실패했습니다: {error_message or "알 수 없는 오류"}',
+                }
+            )
+
+    except Payment.DoesNotExist:
+        return JsonResponse(
+            {
+                "success": False,
+                "message": "해당 결제 정보를 찾을 수 없거나 이미 취소되었습니다.",
+            }
+        )
+    except Exception as e:
+        return JsonResponse(
+            {"success": False, "message": f"결제 취소 중 오류가 발생했습니다: {str(e)}"}
+        )
+
+
+# 결제 취소 완료 페이지
+@login_required
+def payment_cancel_complete_view(request, payment_id):
+    """결제 취소 완료 페이지"""
+    payment = get_object_or_404(
+        Payment, id=payment_id, user=request.user, status="cancelled"
+    )
+
+    # 취소된 강의 목록 (결제에 연결된 장바구니 항목으로부터)
+    cancelled_courses = []
+    for cart_item in payment.cart_items.all():
+        cancelled_courses.append(cart_item.course)
+
+    context = {
+        "payment": payment,
+        "cancelled_courses": cancelled_courses,
+        "cart_count": CartItem.objects.filter(user=request.user).count(),
+    }
+
+    return render(request, "enrollments/payment_cancel_confirmed.html", context)
