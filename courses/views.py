@@ -364,8 +364,10 @@ class CourseListView(ListView):
 
         # 로그인 사용자가 수강 중인 강의 목록
         if self.request.user.is_authenticated:
+            # 수강 중이거나 완료된 강의만 포함 (수강 취소는 제외)
             enrolled_courses = Course.objects.filter(
-                enrollments__student=self.request.user
+                enrollments__student=self.request.user,
+                enrollments__status__in=["in_progress", "completed"],
             )
             context["enrolled_courses"] = enrolled_courses
 
@@ -389,8 +391,9 @@ class CourseDetailView(DetailView):
         course = self.get_object()
         user = self.request.user
 
-        # 수강 여부 확인
+        # 수강 여부 확인 - "dropped" 상태인 경우는 수강 중이 아님
         if user.is_authenticated:
+            # 수강 중 또는 완료 상태인 경우만 is_enrolled를 True로 설정
             context["is_enrolled"] = Enrollment.objects.filter(
                 student=user, course=course, status__in=["in_progress", "completed"]
             ).exists()
@@ -412,7 +415,11 @@ class CourseDetailView(DetailView):
             if context["is_enrolled"]:
                 try:
                     # 수강 정보 가져오기
-                    enrollment = Enrollment.objects.get(student=user, course=course)
+                    enrollment = Enrollment.objects.get(
+                        student=user,
+                        course=course,
+                        status__in=["in_progress", "completed"],
+                    )
                     context["enrollment"] = enrollment
 
                     # 완료된 레슨 ID 목록

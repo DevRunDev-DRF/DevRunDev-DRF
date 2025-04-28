@@ -928,7 +928,7 @@ def payment_cancel_view(request):
             return JsonResponse(
                 {
                     "success": True,
-                    "message": f"결제가 성공적으로 취소되었습니다. {updated_enrollments}개 강의의 수강 상태가 취소되었습니다.",
+                    "message": f"결제가 성공적으로 취소되었습니다. {updated_count}개 강의의 수강 상태가 취소되었습니다.",
                     "cancelled_courses": cancelled_courses,
                     "redirect_url": reverse(
                         "enrollments:payment-cancel-complete", args=[payment.id]
