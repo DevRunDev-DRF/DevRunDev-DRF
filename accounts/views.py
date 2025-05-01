@@ -8,6 +8,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import logout, login as django_login
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
+from django.contrib.auth import logout
 from django.contrib import messages
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -320,7 +321,6 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
 
-    # update_me 액션의 경우 methods가 여러 개이므로 각 메소드별로 swagger_auto_schema 지정
     @swagger_auto_schema(
         method="put",
         operation_summary="내 정보 전체 수정",
@@ -339,9 +339,102 @@ class UserViewSet(viewsets.ModelViewSet):
         detail=False, methods=["put", "patch"], permission_classes=[IsAuthenticated]
     )
     def update_me(self, request):
-        serializer = self.get_serializer(request.user, data=request.data, partial=True)
+        user = request.user
+
+        # 비밀번호만 변경하는 경우 (프로필 페이지의 비밀번호 변경 폼)
+        if "password" in request.data and len(request.data) == 1:
+            password = request.data.get("password")
+            if password:
+                user.set_password(password)
+                user.save()
+
+                # 사용자 로그아웃 처리
+                logout(request)
+
+                # HTML 응답인 경우 - 모달 팝업으로 알림 후 로그인 페이지로 리다이렉트
+                if request.accepted_renderer.format == "html":
+                    response_html = """
+                    <div id="password-change-result">
+                        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50" id="password-change-modal">
+                            <div class="bg-white rounded-lg p-6 max-w-sm mx-auto">
+                                <div class="flex items-center text-green-600 mb-4">
+                                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    <h3 class="text-lg font-bold">비밀번호 변경 완료</h3>
+                                </div>
+                                <p class="mb-6">비밀번호가 성공적으로 변경되었습니다. 새 비밀번호로 다시 로그인해주세요.</p>
+                                <div class="text-right">
+                                    <button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" 
+                                            onclick="window.location.href='/accounts/login/'">
+                                        로그인 페이지로 이동
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <script>
+                            // 3초 후 자동으로 로그인 페이지로 리다이렉트
+                            setTimeout(function() {
+                                window.location.href = "/accounts/login/";
+                            }, 3000);
+                            
+                            // ESC 키 또는 모달 외부 클릭 시 바로 로그인 페이지로 이동
+                            document.addEventListener('keydown', function(e) {
+                                if (e.key === 'Escape') {
+                                    window.location.href = "/accounts/login/";
+                                }
+                            });
+                            
+                            document.getElementById('password-change-modal').addEventListener('click', function(e) {
+                                if (e.target === this) {
+                                    window.location.href = "/accounts/login/";
+                                }
+                            });
+                        </script>
+                    </div>
+                    """
+                    return HttpResponse(response_html)
+
+                # API 응답인 경우
+                return Response(
+                    {
+                        "message": "비밀번호가 성공적으로 변경되었습니다. 새 비밀번호로 다시 로그인해주세요.",
+                        "redirect_to": "/accounts/login/",
+                    }
+                )
+
+        # 일반 프로필 정보 업데이트
+        serializer = self.get_serializer(user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+
+        # 비밀번호가 포함된 경우 (일반 프로필 업데이트)
+        if "password" in request.data and request.data["password"]:
+            password = request.data.pop("password")
+            user = serializer.save()
+            user.set_password(password)
+            user.save()
+
+            # 비밀번호 변경 시 로그아웃 처리
+            logout(request)
+
+            # API 응답 시
+            if request.accepted_renderer.format != "html":
+                return Response(
+                    {
+                        "message": "정보가 업데이트되고 비밀번호가 변경되었습니다. 새 비밀번호로 다시 로그인해주세요.",
+                        "redirect_to": "/accounts/login/",
+                    }
+                )
+
+            # HTML 응답 시 - 메시지 추가하고 로그인 페이지로 리다이렉트
+            messages.success(
+                request,
+                "정보가 업데이트되고 비밀번호가 변경되었습니다. 새 비밀번호로 다시 로그인해주세요.",
+            )
+            return redirect("accounts:login")
+        else:
+            serializer.save()
+
         return Response(serializer.data)
 
 

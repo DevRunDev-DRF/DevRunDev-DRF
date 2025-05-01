@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}내 프로필 - DevRunDev{% endblock %}
 
@@ -38,8 +39,12 @@
                     <div class="mt-8">
                         <h3 class="text-lg font-bold mb-4">비밀번호 변경</h3>
                         
-                        <form hx-patch="{% url 'accounts:user-update_me' %}" hx-swap="outerHTML" class="space-y-4">
-                            {% csrf_token %}
+                        <form hx-patch="{% url 'accounts:user-update_me' %}" 
+                              hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' 
+                              hx-swap="innerHTML" 
+                              hx-target="#password-change-result" 
+                              id="password-change-form"
+                              class="space-y-4">
                             
                             <div>
                                 <label for="password" class="block text-gray-700 font-medium mb-2">새 비밀번호</label>
@@ -51,6 +56,8 @@
                                 비밀번호 변경
                             </button>
                         </form>
+                        
+                        <div id="password-change-result" class="mt-4"></div>
                     </div>
                 </div>
                 
@@ -117,4 +124,77 @@
         </div>
     </div>
 </div>
+
+<!-- 비밀번호 변경 모달 -->
+<div id="password-change-modal" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg p-6 max-w-sm mx-auto">
+        <div class="flex items-center text-green-600 mb-4">
+            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <h3 class="text-lg font-bold">비밀번호 변경 완료</h3>
+        </div>
+        <p class="mb-6">비밀번호가 성공적으로 변경되었습니다. 새 비밀번호로 다시 로그인해주세요.</p>
+        <div class="text-right">
+            <button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" 
+                    id="modal-login-btn">
+                로그인 페이지로 이동
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const passwordForm = document.getElementById('password-change-form');
+        const passwordModal = document.getElementById('password-change-modal');
+        const loginBtn = document.getElementById('modal-login-btn');
+        
+        // 비밀번호 폼 제출 후 결과가 변경되면 체크
+        const passwordResult = document.getElementById('password-change-result');
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                // 성공 메시지가 포함되어 있는지 확인
+                if (mutation.type === 'childList' && 
+                    passwordResult.textContent.includes('비밀번호가 성공적으로 변경되었습니다')) {
+                    // 모달 표시
+                    showPasswordChangedModal();
+                }
+            });
+        });
+        
+        observer.observe(passwordResult, { childList: true, subtree: true });
+        
+        // 모달 표시 함수
+        function showPasswordChangedModal() {
+            passwordModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // 배경 스크롤 방지
+            
+            // 3초 후 자동으로 로그인 페이지로 리다이렉트
+            setTimeout(function() {
+                window.location.href = "/accounts/login/";
+            }, 3000);
+            
+            // 로그인 버튼 클릭 시 이동
+            loginBtn.addEventListener('click', function() {
+                window.location.href = "/accounts/login/";
+            });
+            
+            // ESC 키 또는 모달 외부 클릭 시 바로 로그인 페이지로 이동
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    window.location.href = "/accounts/login/";
+                }
+            });
+            
+            passwordModal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    window.location.href = "/accounts/login/";
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}
