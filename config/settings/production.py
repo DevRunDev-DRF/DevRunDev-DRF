@@ -1,0 +1,50 @@
+from .base import *
+
+DEBUG = False
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
+
+# 프로덕션 데이터베이스 설정
+DATABASES = {"default": env.db()}
+
+# 보안 설정
+SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+
+# 이메일 설정 (SMTP)
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = env("EMAIL_HOST")
+EMAIL_PORT = env.int("EMAIL_PORT")
+EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
+
+# 캐싱 설정 (Redis 예시)
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": env("REDIS_URL"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    }
+}
+
+# 소셜 로그인 설정
+GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = env("GOOGLE_CLIENT_SECRET")
+KAKAO_CLIENT_ID = env("KAKAO_CLIENT_ID")
+KAKAO_CLIENT_SECRET = env("KAKAO_CLIENT_SECRET")
+NAVER_CLIENT_ID = env("NAVER_CLIENT_ID")
+NAVER_CLIENT_SECRET = env("NAVER_CLIENT_SECRET")
+
+# 결제 관련 설정
+PORTONE_PG_PROVIDER = env.str("PORTONE_PG_PROVIDER")
+PORTONE_SHOP_ID = env("PORTONE_SHOP_ID")
+PORTONE_PG = PORTONE_PG_PROVIDER
+PORTONE_API_KEY = env("PORTONE_API_KEY")
+PORTONE_API_SECRET = env("PORTONE_API_SECRET")

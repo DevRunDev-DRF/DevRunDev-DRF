@@ -256,20 +256,19 @@ LOGIN_REDIRECT_URL = "/"  # 로그인 성공 후 이동할 URL
 ACCOUNT_LOGOUT_REDIRECT_URL = "/"  # 로그아웃 후 이동할 URL
 ACCOUNT_SIGNUP_REDIRECT_URL = "account_login"
 
-# allauth 관련 설정 추가/수정
 ACCOUNT_LOGOUT_ON_GET = True
 ACCOUNT_EMAIL_VERIFICATION = "none"
-ACCOUNT_EMAIL_REQUIRED = True
 
 # 템플릿 오버라이드를 위한 추가 설정
 ACCOUNT_TEMPLATE_EXTENSION = "html"
 
 # 회원가입 후 자동 로그인 설정
 ACCOUNT_SESSION_REMEMBER = True  # 세션 유지
-ACCOUNT_SIGNUP_PASSWORD_ENTER_TWICE = True  # 회원가입 시 비밀번호 두 번 입력
-ACCOUNT_USERNAME_REQUIRED = True  # 사용자 이름 필수
-ACCOUNT_AUTHENTICATION_METHOD = "email"  # 이메일로 로그인
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True  # 이메일 확인 시 자동 로그인
+
+# 로그인 및 회원가입 필드 설정 (새로운 방식)
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 
 ACCOUNT_LOGIN_ON_PASSWORD_RESET = True
 
@@ -277,9 +276,6 @@ ACCOUNT_LOGIN_ON_PASSWORD_RESET = True
 SOCIALACCOUNT_EMAIL_VERIFICATION = "none"
 SOCIALACCOUNT_EMAIL_REQUIRED = False
 
-# 로그인 시 사용자 이름 대신 이메일 사용
-ACCOUNT_LOGIN_METHODS = {"email"}
-ACCOUNT_USERNAME_REQUIRED = False
 
 # 자동 가입 활성화 (True 시 /accounts/signup/ 없이 자동 가입)
 SOCIALACCOUNT_AUTO_SIGNUP = True
