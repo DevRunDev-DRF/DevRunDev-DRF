@@ -17,8 +17,19 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: "3.13"
-        cache: 'uv'
         
+    # UV 캐싱 설정
+    - name: UV 캐시 설정
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/uv
+          .venv
+        key: ${{ runner.os }}-uv-${{ hashFiles('pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-uv-
+          
+    # UV 설치 및 가상환경 설정
     - name: UV 설치 및 의존성 설치
       run: |
         python -m pip install --upgrade pip
@@ -29,13 +40,19 @@ jobs:
         uv pip install flake8 black isort
         
     - name: 코드 포맷팅 검사 (Black)
-      run: black --check .
+      run: |
+        source .venv/bin/activate || . .venv/bin/activate
+        black --check .
       
     - name: 임포트 정렬 검사 (isort)
-      run: isort --check-only --profile black .
+      run: |
+        source .venv/bin/activate || . .venv/bin/activate
+        isort --check-only --profile black .
       
     - name: 린트 검사 (flake8)
-      run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+      run: |
+        source .venv/bin/activate || . .venv/bin/activate
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 
   security:
     runs-on: ubuntu-latest
@@ -46,8 +63,19 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: "3.13"
-        cache: 'uv'
         
+    # UV 캐싱 설정
+    - name: UV 캐시 설정
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/uv
+          .venv
+        key: ${{ runner.os }}-uv-security-${{ hashFiles('pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-uv-security-
+          
+    # UV 설치 및 가상환경 설정
     - name: UV 설치 및 의존성 설치
       run: |
         python -m pip install --upgrade pip
@@ -58,10 +86,14 @@ jobs:
         uv pip install bandit safety
         
     - name: 보안 취약점 스캔 (Bandit)
-      run: bandit -r . -ll
+      run: |
+        source .venv/bin/activate || . .venv/bin/activate
+        bandit -r . -ll
       
     - name: 의존성 보안 스캔 (Safety)
-      run: safety check
+      run: |
+        source .venv/bin/activate || . .venv/bin/activate
+        safety check
 
   test:
     needs: [lint, security]
@@ -89,7 +121,17 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-        cache: 'uv'
+    
+    # UV 캐싱 설정
+    - name: UV 캐시 설정
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/uv
+          .venv
+        key: ${{ runner.os }}-python-${{ matrix.python-version }}-uv-${{ hashFiles('pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-python-${{ matrix.python-version }}-uv-
 
     - name: 환경 변수 설정 (Linux/macOS)
       if: runner.os != 'Windows'
@@ -111,7 +153,7 @@ jobs:
         echo "IAMPORT_API_KEY=test-iamport-key" | Out-File -FilePath .env -Encoding utf8 -Append
         echo "IAMPORT_API_SECRET=test-iamport-secret" | Out-File -FilePath .env -Encoding utf8 -Append
 
-    - name: UV 설치
+    - name: UV 설치 및 가상환경 세팅
       run: |
         python -m pip install --upgrade pip
         pip install uv
