@@ -34,69 +34,43 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
 
-    @swagger_auto_schema(
-        operation_summary="회원 가입",
-        operation_description="새로운 사용자를 생성합니다.",
-        responses={
-            201: openapi.Response(
-                description="회원 가입 성공",
-                examples={
-                    "application/json": {
-                        "token": "9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b",
-                        "user_id": 1,
-                        "email": "user@example.com",
-                        "username": "username",
-                        "role": "Student",
-                    }
-                },
-            ),
-            400: "잘못된 요청",
-        },
-    )
-    def create(self, request, *args, **kwargs):
-        # HTML 요청인 경우
-        if request.accepted_renderer.format == "html":
-            serializer = self.get_serializer(data=request.data)
-            try:
-                serializer.is_valid(raise_exception=True)
-                user = serializer.save()
-
-                # 토큰 생성
-                Token.objects.get_or_create(user=user)
-
-                # Django 로그인
-                django_login(request, user)
-
-                messages.success(request, "회원가입이 완료되었습니다.")
-                return redirect("home")
-            except Exception as e:
-                # 에러 메시지를 템플릿에 전달
-                return render(
-                    request, "accounts/register.html", {"errors": serializer.errors}
-                )
-
-        # API 요청인 경우 (기존 로직 유지)
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-
-        # 토큰 생성
-        token, created = Token.objects.get_or_create(user=user)
-
-        return Response(
-            {
-                "token": token.key,
-                "user_id": user.pk,
-                "email": user.email,
-                "username": user.username,
-                "role": user.role,
-            },
-            status=status.HTTP_201_CREATED,
-        )
-
     def get(self, request):
         """회원가입 폼 렌더링"""
         return render(request, "accounts/register.html")
+
+    def post(self, request, *args, **kwargs):
+        """폼 제출 처리"""
+        # HTMX 요청 확인
+        is_htmx = request.headers.get("HX-Request") == "true"
+
+        serializer = self.get_serializer(data=request.data)
+
+        if serializer.is_valid():
+            # 사용자 생성
+            user = serializer.save()
+
+            # 토큰 생성
+            token, created = Token.objects.get_or_create(user=user)
+
+            # HTMX 요청인 경우
+            if is_htmx:
+                # 성공 메시지가 포함된 HTML 응답 반환
+                return render(request, "accounts/register_success.html")
+
+            # 일반 HTTP 요청인 경우
+            django_login(request, user)
+            messages.success(request, "회원가입이 완료되었습니다!")
+            return redirect("accounts:login")
+
+        # 유효성 검사 실패 시
+        if is_htmx:
+            # HTMX 요청인 경우, 오류 메시지가 포함된 폼 다시 렌더링
+            return render(
+                request, "accounts/register.html", {"errors": serializer.errors}
+            )
+
+        # API 요청인 경우
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class LoginView(generics.GenericAPIView):

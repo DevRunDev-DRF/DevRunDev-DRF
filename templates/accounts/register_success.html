@@ -1,0 +1,19 @@
+<div id="register-form-container" class="text-center py-8">
+    <div class="bg-green-100 text-green-800 p-4 rounded mb-6">
+        <svg class="w-6 h-6 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span class="font-medium">회원가입이 완료되었습니다!</span>
+    </div>
+    
+    <p class="mb-4">로그인 페이지로 이동합니다...</p>
+    
+    <a href="{% url 'accounts:login' %}" class="text-blue-600 hover:underline">여기를 클릭하여 로그인하기</a>
+    
+    <script>
+        // 3초 후 로그인 페이지로 자동 이동
+        setTimeout(function() {
+            window.location.href = "{% url 'accounts:login' %}";
+        }, 3000);
+    </script>
+</div>
