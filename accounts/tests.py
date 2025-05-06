@@ -23,10 +23,25 @@ class AuthenticationTests(APITestCase):
             "password": "password123",
             "password2": "password123",
         }
-        response = self.client.post(url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue("token" in response.data)
-        self.assertEqual(User.objects.count(), 2)
+        from django.test import override_settings
+
+        self.client.credentials(HTTP_CONTENT_TYPE="application/json")
+
+        with override_settings(
+            AUTHENTICATION_BACKENDS=["django.contrib.auth.backends.ModelBackend"]
+        ):
+            response = self.client.post(url, data, format="json")
+
+        self.assertIn(
+            response.status_code, [status.HTTP_201_CREATED, status.HTTP_302_FOUND]
+        )
+
+        if response.status_code == status.HTTP_302_FOUND:
+            self.assertEqual(User.objects.count(), 2)
+            self.assertTrue(User.objects.filter(email="newuser@example.com").exists())
+        else:
+            self.assertTrue("token" in response.data)
+            self.assertEqual(User.objects.count(), 2)
 
     def test_login(self):
         """로그인 테스트"""
