@@ -657,6 +657,7 @@ uv run python manage.py seed_data
 
 #### 2) 학생
 장바구니 기능을 통해 강의 구매 및 학습 가능, 강의 시청 후 수료증 발급 및 리뷰 가능, QnA를 통해 학생과 강사 간의 소통 가능
+![강의 결제 및 수강](https://github.com/user-attachments/assets/f0d0bb83-91e4-4227-be4b-6aea9c0248f1)
 
 
 ### 3) 관리자  
