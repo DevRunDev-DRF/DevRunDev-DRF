@@ -255,38 +255,85 @@ class CartItemViewSet(viewsets.ModelViewSet):
             and getattr(request.accepted_renderer, "format", None) == "html"
         ) or request.content_type == "application/x-www-form-urlencoded"
 
-        course_id = request.data.get("course")
-        course = get_object_or_404(Course, id=course_id)
+        # HTMX 요청 확인
+        is_htmx = request.headers.get("HX-Request") == "true"
 
-        if Enrollment.objects.filter(student=request.user, course=course).exists():
-            if is_html_request:
-                return redirect("enrollments:cart-view")
+        # course_id 확인
+        course_id = None
+
+        # dict 형태로 넘어오는 경우
+        if isinstance(request.data, dict) and "course" in request.data:
+            course_id = request.data.get("course")
+        # QueryDict 형태로 넘어오는 경우 (form 제출)
+        elif hasattr(request.data, "get") and request.data.get("course"):
+            course_id = request.data.get("course")
+        # data와 query_params 모두 확인
+        if not course_id:
+            course_id = request.query_params.get("course_id")
+
+        if not course_id:
+            if is_html_request or is_htmx:
+                messages.error(request, "강의 ID가 제공되지 않았습니다.")
+                return redirect("courses:course-list")
             return Response(
-                {"detail": "이미 수강 중인 강의입니다."},
+                {"detail": "course 필드가 필요합니다."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if CartItem.objects.filter(user=request.user, course=course).exists():
+        try:
+            course = get_object_or_404(Course, id=course_id)
+
+            if Enrollment.objects.filter(student=request.user, course=course).exists():
+                if is_html_request or is_htmx:
+                    messages.info(request, "이미 수강 중인 강의입니다.")
+                    return redirect("enrollments:cart-view")
+                return Response(
+                    {"detail": "이미 수강 중인 강의입니다."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if CartItem.objects.filter(user=request.user, course=course).exists():
+                if is_html_request or is_htmx:
+                    messages.info(request, "이미 장바구니에 추가된 강의입니다.")
+                    return redirect("enrollments:cart-view")
+                return Response(
+                    {"detail": "이미 장바구니에 추가된 강의입니다."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # 장바구니에 추가
+            cart_item = CartItem.objects.create(user=request.user, course=course)
+
+            # 장바구니 개수 얻기
+            cart_count = CartItem.objects.filter(user=request.user).count()
+
+            # HTMX 요청인 경우 특별 처리
+            if is_htmx:
+                messages.success(request, "강의가 장바구니에 추가되었습니다.")
+                return HttpResponse(
+                    f"{cart_count}",
+                    headers={
+                        "HX-Trigger": '{"updateCartCount": "' + str(cart_count) + '"}'
+                    },
+                )
+
+            # HTML 요청인 경우 장바구니 페이지로 리다이렉트
             if is_html_request:
+                messages.success(request, "강의가 장바구니에 추가되었습니다.")
                 return redirect("enrollments:cart-view")
+
+            # API 요청인 경우 응답 반환
+            serializer = self.get_serializer(cart_item)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        except Course.DoesNotExist:
+            if is_html_request or is_htmx:
+                messages.error(request, "존재하지 않는 강의입니다.")
+                return redirect("courses:course-list")
             return Response(
-                {"detail": "이미 장바구니에 추가된 강의입니다."},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"detail": "존재하지 않는 강의입니다."},
+                status=status.HTTP_404_NOT_FOUND,
             )
-
-        # 장바구니에 추가
-        data = {"course": course_id, "user": request.user.id}
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-
-        # HTML 요청인 경우 장바구니 페이지로 리다이렉트
-        if is_html_request:
-            return redirect("enrollments:cart-view")
-
-        # API 요청인 경우 장바구니 개수 반환
-        cart_count = CartItem.objects.filter(user=request.user).count()
-        return Response(str(cart_count), status=status.HTTP_201_CREATED)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
