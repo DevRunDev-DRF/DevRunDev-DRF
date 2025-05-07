@@ -1,4 +1,4 @@
-# DevRunDev
+![강사 대시보드](https://github.com/user-attachments/assets/f9c3bc9a-6fa5-4a8e-8348-ddd880e75c6e)# DevRunDev
 - DevRunDev는 IT 및 개발자를 위한 온라인 교육 플랫폼입니다.
 - 강사들은 실무 중심의 강의를 제작하고 수강생들은 최신 기술을 배우며 성장할 수 있도록 지원합니다.
 - 또한 강의 진행률, 평가 시스템, 강의 별 퀴즈 등의 기능을 통해 효율적인 학습 경험을 제공합니다.
@@ -641,6 +641,29 @@ uv run python manage.py seed_data
 ```
 
 ## 6. 💻 화면 설계
+### 1) 계정 관리
+일반 회원가입 및 소셜 로그인(Google, Kakao, Naver) 가능, 프로필 관리를 통해 비밀번호 수정 및 강사 신청 가능
+![회원가입 및 로그인](https://github.com/user-attachments/assets/8abf2ca6-6cfb-45d2-8945-75aeeabab702)
+![강사신청](https://github.com/user-attachments/assets/a6538e20-bb15-4fb5-9751-7711eeee123e)
+
+
+### 2) 강의 관련
+#### 1) 강사 
+강의 생성 및 퀴즈 생성 가능
+강사 대시보드를 통해 강의 현황, 학생 관리 및 수익 관리 가능
+![강의 생성](https://github.com/user-attachments/assets/3bbebe28-e88d-4c29-bffd-2e01b5cfb894)
+![강사 대시보드](https://github.com/user-attachments/assets/a53e59f1-1e7e-4aec-bd35-296f9baf1ad6)
+
+
+#### 2) 학생
+장바구니 기능을 통해 강의 구매 및 학습 가능, 강의 시청 후 수료증 발급 및 리뷰 가능, QnA를 통해 학생과 강사 간의 소통 가능
+
+
+### 3) 관리자  
+관리자 대시보드를 통해 사용자, 강의, 강사, 결제 등 시스템 전반에 대한 관리 가능
+![관리자 대시보드](https://github.com/user-attachments/assets/4a99587c-5669-424a-94b5-f86dcc6875ea)
+
+
 
 ## 7. ERD
 ![DevRunDev_DRF_ERDpng](https://github.com/user-attachments/assets/a1680d19-529a-4b78-938d-1a9b7b58a64b)
